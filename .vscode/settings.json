@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "stdbool.h": "c",
+        "stdint.h": "c",
+        "hw_memmap.h": "c",
+        "interrupt.h": "c",
+        "atomic": "c",
+        "compare": "c",
+        "type_traits": "c",
+        "xstring": "c",
+        "xutility": "c",
+        "cstring": "c"
+    }
+}
