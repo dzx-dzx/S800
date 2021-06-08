@@ -46,10 +46,14 @@
 #define MASTER_MODE_CALENDER 0
 #define MASTER_MODE_SOLAR_TERMS 1
 #define MASTER_MODE_TIME 2
-#define MASTER_MODE_BOOT 3
-#define NUMBER_OF_MASTER_MODES 3 //排除启动模式.
+#define MASTER_MODE_COUNTDOWN 3
+#define MASTER_MODE_ALARM 4
+#define MASTER_MODE_BOOT 5
+#define NUMBER_OF_MASTER_MODES 5 //排除启动模式.
 #define TIME_MODE_DISPLAY 0
 #define TIME_MODE_SET 1
+#define CALENDER_MODE_DISPLAY 0
+#define CALENDER_MODE_SET 1
 
 void Delay(uint32_t value);
 void UARTStringPut(const char *cMessage);
@@ -124,7 +128,7 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(2000);
+	Delay(4000);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
 }
@@ -220,9 +224,9 @@ void SysTick_Handler(void)
 		uint16_t second;
 	};
 	struct Time time;
-	static uint64_t timeInUTC; //单位为0.01s
+	static uint64_t timeInUTC = 162309904000; //单位为0.01s
 	const uint16_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-	const uint16_t daysInMonthInLeapYear[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	const uint16_t daysInMonthInLeapYear[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	const uint16_t daysInYear = 365;
 	const uint16_t daysInLeapYear = 366;
 
@@ -231,12 +235,13 @@ void SysTick_Handler(void)
 	{
 		uint8_t master;
 		uint8_t time;
-		// uint8_t calender;
+		uint8_t calender;
 	};
 	static struct Mode mode = {
 		MASTER_MODE_TIME,
-		TIME_MODE_DISPLAY};
-	static uint8_t timeModeSelectedDigit;
+		TIME_MODE_DISPLAY,
+		CALENDER_MODE_DISPLAY};
+	static uint8_t timeModeSelectedDigit, calenderModeSelectedDigit = 3;//日历屏蔽操作0-3、4、6.
 	static char segmentDisplayCharacter[8];
 
 	static uint8_t previousKeypadState[8];
@@ -281,18 +286,20 @@ void SysTick_Handler(void)
 		time.day++;
 	}
 	time.year = 1970;
-	time.month = 1;
+	time.month = 0;
 
-	while (time.day > (isLeapYear(time.year) ? daysInLeapYear : daysInYear))
+	while (time.day >= (isLeapYear(time.year) ? daysInLeapYear : daysInYear))
 	{
 		time.day -= (isLeapYear(time.year) ? daysInLeapYear : daysInYear);
 		time.year++;
 	}
-	while (time.day > (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]))
+	while (time.day >= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]))
 	{
 		time.day -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]);
 		time.month++;
 	}
+	time.month++;
+	time.day++;
 
 	if (buttonPressed[0])
 		mode.master = (mode.master + NUMBER_OF_MASTER_MODES - 1) % NUMBER_OF_MASTER_MODES;
@@ -379,14 +386,86 @@ void SysTick_Handler(void)
 	break;
 	case MASTER_MODE_CALENDER:
 	{
-		segmentDisplayCharacter[0] = '1';
-		segmentDisplayCharacter[1] = '9';
-		segmentDisplayCharacter[2] = '2';
-		segmentDisplayCharacter[3] = '6';
-		segmentDisplayCharacter[4] = '0';
-		segmentDisplayCharacter[5] = '8';
-		segmentDisplayCharacter[6] = '1';
-		segmentDisplayCharacter[7] = '7';
+		if (keypadPressed[5])
+			mode.time = CALENDER_MODE_SET;
+		else if (keypadPressed[7])
+			mode.time = CALENDER_MODE_DISPLAY;
+		segmentDisplayCharacter[0] = convertNumberToChar(time.year % 10000 / 1000);
+		segmentDisplayCharacter[1] = convertNumberToChar(time.year % 1000 / 100);
+		segmentDisplayCharacter[2] = convertNumberToChar(time.year % 100 / 10);
+		segmentDisplayCharacter[3] = convertNumberToChar(time.year % 10);
+		segmentDisplayCharacter[4] = convertNumberToChar(time.month % 100 / 10);
+		segmentDisplayCharacter[5] = convertNumberToChar(time.month % 10);
+		segmentDisplayCharacter[6] = convertNumberToChar(time.day % 100 / 10);
+		segmentDisplayCharacter[7] = convertNumberToChar(time.day % 10);
+
+		if (mode.time == CALENDER_MODE_SET)
+		{
+			if (keypadPressed[0])
+				do
+				{
+					calenderModeSelectedDigit = (calenderModeSelectedDigit + 7) % 8;
+				} while ((calenderModeSelectedDigit == 3 || calenderModeSelectedDigit == 5 || calenderModeSelectedDigit == 6 || calenderModeSelectedDigit == 7));
+			if (keypadPressed[2])
+				do
+				{
+					calenderModeSelectedDigit = (calenderModeSelectedDigit + 1) % 8;
+				} while ((calenderModeSelectedDigit == 3 || calenderModeSelectedDigit == 5 || calenderModeSelectedDigit == 6 || calenderModeSelectedDigit == 7));
+			if (keypadPressed[6])
+				switch (calenderModeSelectedDigit)
+				{
+				case 0:
+					break;
+				case 1:
+					break;
+				case 2:
+					break;
+				case 3:
+					timeInUTC += (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
+					break;
+				case 4:
+					break;
+				case 5:
+					timeInUTC += (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month - 1] : daysInMonth[time.month - 1]) * 86400 * 100;
+					break;
+				case 6:
+					timeInUTC += 10 * 86400 * 100;
+					break;
+				case 7:
+					timeInUTC += 1 * 86400 * 100;
+					break;
+				default:
+					break;
+				}
+			if (keypadPressed[1])
+				switch (calenderModeSelectedDigit)
+				{
+				case 0:
+					break;
+				case 1:
+					break;
+				case 2:
+					break;
+				case 3:
+					timeInUTC -= (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
+					break;
+				case 4:
+					break;
+				case 5:
+					timeInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month - 1] : daysInMonth[time.month - 1]) * 86400 * 100; //认为时间真正增加一月.
+					break;
+				case 6:
+					timeInUTC -= 10 * 86400 * 100;
+					break;
+				case 7:
+					timeInUTC -= 1 * 86400 * 100;
+					break;
+				default:
+					break;
+				}
+			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+				segmentDisplayCharacter[calenderModeSelectedDigit] = ' ';
+		}
 	}
 	break;
 	case MASTER_MODE_SOLAR_TERMS:

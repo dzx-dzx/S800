@@ -30,21 +30,21 @@ Rebuild target 'Target 1'
 assembling startup_TM4C129.s...
 compiling system_TM4C129.c...
 compiling exp2-1.c...
-exp2-1.c(147): warning:  #550-D: variable "result"  was set but never used
+exp2-1.c(149): warning:  #550-D: variable "result"  was set but never used
   	uint8_t result;
-exp2-1.c(179): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
+exp2-1.c(181): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
   	UARTStringPut((uint8_t *)"\r\nHello, world!\r\n");
-exp2-1.c(246): warning:  #550-D: variable "keypadHold"  was set but never used
+exp2-1.c(249): warning:  #550-D: variable "keypadHold"  was set but never used
   	uint16_t keypadPressed[8] = {0}, keypadHold[8] = {0};
-exp2-1.c(247): warning:  #550-D: variable "buttonHold"  was set but never used
+exp2-1.c(250): warning:  #550-D: variable "buttonHold"  was set but never used
   	uint16_t buttonPressed[2] = {0}, buttonHold[2] = {0};
-exp2-1.c(464): warning:  #550-D: variable "rop"  was set but never used
+exp2-1.c(541): warning:  #550-D: variable "rop"  was set but never used
   	uint8_t value, rop;
-exp2-1.c(492): warning:  #186-D: pointless comparison of unsigned integer with zero
+exp2-1.c(569): warning:  #186-D: pointless comparison of unsigned integer with zero
   	if (number >= 0 && number <= 9)
 exp2-1.c: 6 warnings, 0 errors
 linking...
-Program Size: Code=5664 RO-data=2008 RW-data=56 ZI-data=728  
+Program Size: Code=6568 RO-data=2008 RW-data=56 ZI-data=728  
 FromELF: creating hex file...
 ".\Objects\exp1.axf" - 0 Error(s), 6 Warning(s).
 
@@ -72,10 +72,10 @@ Package Vendor: Keil
    * Component: ARM::CMSIS:CORE:5.0.0
 
    * Component: Keil::Device:Startup:1.0.0
-      Source file:   Device\Source\ARM\startup_TM4C129.s
-      Source file:   Device\Source\system_TM4C129.c
       Include file:  Device\Include\TM4C129\TM4C129.h
-Build Time Elapsed:  00:00:01
+      Source file:   Device\Source\system_TM4C129.c
+      Source file:   Device\Source\ARM\startup_TM4C129.s
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>
