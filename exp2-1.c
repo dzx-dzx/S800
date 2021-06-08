@@ -54,6 +54,11 @@
 #define TIME_MODE_SET 1
 #define CALENDER_MODE_DISPLAY 0
 #define CALENDER_MODE_SET 1
+#define COUNTDOWN_MODE_CLEAR 0
+#define COUNTDOWN_MODE_FORWARD 1
+#define COUNTDOWN_MODE_PAUSE 2
+#define COUNTDOWN_MODE_TIMEOUT 3
+#define COUNTDOWN_MODE_SET 4
 
 void Delay(uint32_t value);
 void UARTStringPut(const char *cMessage);
@@ -75,6 +80,7 @@ struct PeripheralDeviceInput
 	uint8_t buttonStateByte;
 	char UARTMessage[100];
 	char *UARTMessageTail;
+	uint16_t UARTMessageReceiveFinishedCountdown;
 } peripheralDeviceInput;
 
 struct PeripheralDeviceOutput
@@ -103,6 +109,8 @@ int main(void)
 	//use internal 16M oscillator, HSI
 	ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_16MHZ | SYSCTL_OSC_INT | SYSCTL_USE_OSC), 16000000);
 	peripheralDeviceInput.keyPadStateByte = tempKeyboardStateByte;
+	peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 1926;
+	peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
 
 	S800_GPIO_Init();
 	S800_I2C0_Init();
@@ -224,11 +232,15 @@ void SysTick_Handler(void)
 		uint16_t second;
 	};
 	struct Time time;
-	static uint64_t timeInUTC = 162309904000; //单位为0.01s
+	static uint64_t timestampInUTC = 162309904000; //单位为0.01s
 	const uint16_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	const uint16_t daysInMonthInLeapYear[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	const uint16_t daysInYear = 365;
 	const uint16_t daysInLeapYear = 366;
+	const uint16_t solarTermsIn2021[] = {0};
+
+	struct Time countdownTime;
+	static uint32_t countdownTimestamp;
 
 	static uint32_t counter;
 	struct Mode
@@ -236,12 +248,16 @@ void SysTick_Handler(void)
 		uint8_t master;
 		uint8_t time;
 		uint8_t calender;
+		uint8_t countdown;
 	};
 	static struct Mode mode = {
-		MASTER_MODE_TIME,
+		MASTER_MODE_CALENDER,
 		TIME_MODE_DISPLAY,
-		CALENDER_MODE_DISPLAY};
-	static uint8_t timeModeSelectedDigit, calenderModeSelectedDigit = 3;//日历屏蔽操作0-3、4、6.
+		CALENDER_MODE_DISPLAY,
+		COUNTDOWN_MODE_PAUSE};
+
+	static uint8_t timeSelectedDigit,calenderSelectedDigit,countdownSelectedDigit;
+
 	static char segmentDisplayCharacter[8];
 
 	static uint8_t previousKeypadState[8];
@@ -251,9 +267,21 @@ void SysTick_Handler(void)
 	uint16_t keypadPressed[8] = {0}, keypadHold[8] = {0};
 	uint16_t buttonPressed[2] = {0}, buttonHold[2] = {0};
 
-	counter++;
+	uint8_t UARTMessageReceived = false;
+	char *msg = peripheralDeviceInput.UARTMessage;
 
-	//Keypad按钮状态.
+	counter++;
+	//UART接受数据完整性验证:
+	if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown < 100)
+		peripheralDeviceInput.UARTMessageReceiveFinishedCountdown++;
+	else if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown == 100)
+	{
+		peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 1926;
+		UARTMessageReceived = true;
+		peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
+	}
+
+	//Keypad及按钮状态.
 	if (counter % (SYSTICK_FREQUENCY * 50 / 1000) == 0) //50ms
 	{
 		for (i = 0; i < 8; i++)
@@ -274,12 +302,12 @@ void SysTick_Handler(void)
 
 	//时间控制.
 	if (mode.time == TIME_MODE_DISPLAY && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
-		timeInUTC++;
-	time.second = timeInUTC / 100 % 60;
-	time.minute = timeInUTC / 100 % 3600 / 60;
-	time.hour = timeInUTC / 100 % 86400 / 3600 + 8;
+		timestampInUTC++;
+	time.second = timestampInUTC / 100 % 60;
+	time.minute = timestampInUTC / 100 % 3600 / 60;
+	time.hour = timestampInUTC / 100 % 86400 / 3600 + 8;
 
-	time.day = timeInUTC / 100 / 86400;
+	time.day = timestampInUTC / 100 / 86400;
 	if (time.hour >= 24)
 	{
 		time.hour -= 24;
@@ -298,14 +326,25 @@ void SysTick_Handler(void)
 		time.day -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]);
 		time.month++;
 	}
-	time.month++;
-	time.day++;
 
+	//倒计时控制.
+	if (mode.countdown == COUNTDOWN_MODE_FORWARD && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
+	{
+		if (countdownTimestamp == 0)
+			mode.countdown = COUNTDOWN_MODE_TIMEOUT;
+		else
+			countdownTimestamp--;
+	}
+	countdownTime.second = countdownTimestamp / 100 % 60;
+	countdownTime.minute = countdownTimestamp / 100 % 3600 / 60;
+	countdownTime.hour = countdownTimestamp / 100 % 86400 / 3600;
+
+	//主模式切换.
 	if (buttonPressed[0])
 		mode.master = (mode.master + NUMBER_OF_MASTER_MODES - 1) % NUMBER_OF_MASTER_MODES;
 	if (buttonPressed[1])
 		mode.master = (mode.master + 1) % NUMBER_OF_MASTER_MODES;
-
+	UARTCharPut(UART0_BASE, convertNumberToChar(mode.master));
 	//
 	switch (mode.master)
 	{
@@ -313,7 +352,10 @@ void SysTick_Handler(void)
 	{
 
 		if (keypadPressed[5])
+		{
 			mode.time = TIME_MODE_SET;
+			timeSelectedDigit = 7;
+		}
 		else if (keypadPressed[7])
 			mode.time = TIME_MODE_DISPLAY;
 		segmentDisplayCharacter[0] = convertNumberToChar(time.hour / 10);
@@ -322,97 +364,100 @@ void SysTick_Handler(void)
 		segmentDisplayCharacter[3] = convertNumberToChar(time.minute % 10);
 		segmentDisplayCharacter[4] = convertNumberToChar(time.second / 10);
 		segmentDisplayCharacter[5] = convertNumberToChar(time.second % 10);
-		segmentDisplayCharacter[6] = convertNumberToChar(timeInUTC % 100 / 10);
-		segmentDisplayCharacter[7] = convertNumberToChar(timeInUTC % 10);
+		segmentDisplayCharacter[6] = convertNumberToChar(timestampInUTC % 100 / 10);
+		segmentDisplayCharacter[7] = convertNumberToChar(timestampInUTC % 10);
 
 		if (mode.time == TIME_MODE_SET)
 		{
 			if (keypadPressed[0])
-				timeModeSelectedDigit = (timeModeSelectedDigit + 5) % 6;
+				timeSelectedDigit = (timeSelectedDigit + 5) % 6;
 			if (keypadPressed[2])
-				timeModeSelectedDigit = (timeModeSelectedDigit + 1) % 6;
+				timeSelectedDigit = (timeSelectedDigit + 1) % 6;
 			if (keypadPressed[6])
-				switch (timeModeSelectedDigit)
+				switch (timeSelectedDigit)
 				{
 				case 0:
-					timeInUTC += 36000 * 100;
+					timestampInUTC += 36000 * 100;
 					break;
 				case 1:
-					timeInUTC += 3600 * 100;
+					timestampInUTC += 3600 * 100;
 					break;
 				case 2:
-					timeInUTC += 600 * 100;
+					timestampInUTC += 600 * 100;
 					break;
 				case 3:
-					timeInUTC += 60 * 100;
+					timestampInUTC += 60 * 100;
 					break;
 				case 4:
-					timeInUTC += 10 * 100;
+					timestampInUTC += 10 * 100;
 					break;
 				case 5:
-					timeInUTC += 1 * 100;
+					timestampInUTC += 1 * 100;
 					break;
 				default:
 					break;
 				}
 			if (keypadPressed[1])
-				switch (timeModeSelectedDigit)
+				switch (timeSelectedDigit)
 				{
 				case 0:
-					timeInUTC -= 36000 * 100;
+					timestampInUTC -= 36000 * 100;
 					break;
 				case 1:
-					timeInUTC -= 3600 * 100;
+					timestampInUTC -= 3600 * 100;
 					break;
 				case 2:
-					timeInUTC -= 600 * 100;
+					timestampInUTC -= 600 * 100;
 					break;
 				case 3:
-					timeInUTC -= 60 * 100;
+					timestampInUTC -= 60 * 100;
 					break;
 				case 4:
-					timeInUTC -= 10 * 100;
+					timestampInUTC -= 10 * 100;
 					break;
 				case 5:
-					timeInUTC -= 1 * 100;
+					timestampInUTC -= 1 * 100;
 					break;
 				default:
 					break;
 				}
 			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-				segmentDisplayCharacter[timeModeSelectedDigit] = ' ';
+				segmentDisplayCharacter[timeSelectedDigit] = ' ';
 		}
 	}
 	break;
 	case MASTER_MODE_CALENDER:
 	{
 		if (keypadPressed[5])
+		{
 			mode.time = CALENDER_MODE_SET;
+			calenderSelectedDigit = 7;
+		}
 		else if (keypadPressed[7])
 			mode.time = CALENDER_MODE_DISPLAY;
 		segmentDisplayCharacter[0] = convertNumberToChar(time.year % 10000 / 1000);
 		segmentDisplayCharacter[1] = convertNumberToChar(time.year % 1000 / 100);
 		segmentDisplayCharacter[2] = convertNumberToChar(time.year % 100 / 10);
 		segmentDisplayCharacter[3] = convertNumberToChar(time.year % 10);
-		segmentDisplayCharacter[4] = convertNumberToChar(time.month % 100 / 10);
-		segmentDisplayCharacter[5] = convertNumberToChar(time.month % 10);
-		segmentDisplayCharacter[6] = convertNumberToChar(time.day % 100 / 10);
-		segmentDisplayCharacter[7] = convertNumberToChar(time.day % 10);
+		segmentDisplayCharacter[4] = convertNumberToChar((time.month + 1) % 100 / 10);
+		segmentDisplayCharacter[5] = convertNumberToChar((time.month + 1) % 10);
+		segmentDisplayCharacter[6] = convertNumberToChar((time.day + 1) % 100 / 10);
+		segmentDisplayCharacter[7] = convertNumberToChar((time.day + 1) % 10);
 
 		if (mode.time == CALENDER_MODE_SET)
 		{
 			if (keypadPressed[0])
 				do
 				{
-					calenderModeSelectedDigit = (calenderModeSelectedDigit + 7) % 8;
-				} while ((calenderModeSelectedDigit == 3 || calenderModeSelectedDigit == 5 || calenderModeSelectedDigit == 6 || calenderModeSelectedDigit == 7));
+					calenderSelectedDigit = (calenderSelectedDigit + 7) % 8;
+				} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
 			if (keypadPressed[2])
 				do
 				{
-					calenderModeSelectedDigit = (calenderModeSelectedDigit + 1) % 8;
-				} while ((calenderModeSelectedDigit == 3 || calenderModeSelectedDigit == 5 || calenderModeSelectedDigit == 6 || calenderModeSelectedDigit == 7));
+					calenderSelectedDigit = (calenderSelectedDigit + 1) % 8;
+				} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
 			if (keypadPressed[6])
-				switch (calenderModeSelectedDigit)
+				switch (calenderSelectedDigit)
 				{
 				case 0:
 					break;
@@ -421,24 +466,24 @@ void SysTick_Handler(void)
 				case 2:
 					break;
 				case 3:
-					timeInUTC += (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
+					timestampInUTC += (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
 					break;
 				case 4:
 					break;
 				case 5:
-					timeInUTC += (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month - 1] : daysInMonth[time.month - 1]) * 86400 * 100;
+					timestampInUTC += (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100;
 					break;
 				case 6:
-					timeInUTC += 10 * 86400 * 100;
+					timestampInUTC += 10 * 86400 * 100;
 					break;
 				case 7:
-					timeInUTC += 1 * 86400 * 100;
+					timestampInUTC += 1 * 86400 * 100;
 					break;
 				default:
 					break;
 				}
 			if (keypadPressed[1])
-				switch (calenderModeSelectedDigit)
+				switch (calenderSelectedDigit)
 				{
 				case 0:
 					break;
@@ -447,24 +492,24 @@ void SysTick_Handler(void)
 				case 2:
 					break;
 				case 3:
-					timeInUTC -= (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
+					timestampInUTC -= (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
 					break;
 				case 4:
 					break;
 				case 5:
-					timeInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month - 1] : daysInMonth[time.month - 1]) * 86400 * 100; //认为时间真正增加一月.
+					timestampInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100; //认为时间真正增加一月.
 					break;
 				case 6:
-					timeInUTC -= 10 * 86400 * 100;
+					timestampInUTC -= 10 * 86400 * 100;
 					break;
 				case 7:
-					timeInUTC -= 1 * 86400 * 100;
+					timestampInUTC -= 1 * 86400 * 100;
 					break;
 				default:
 					break;
 				}
 			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-				segmentDisplayCharacter[calenderModeSelectedDigit] = ' ';
+				segmentDisplayCharacter[calenderSelectedDigit] = ' ';
 		}
 	}
 	break;
@@ -479,11 +524,109 @@ void SysTick_Handler(void)
 		segmentDisplayCharacter[6] = 'G';
 		segmentDisplayCharacter[7] = 'H';
 	}
+	break;
+	case MASTER_MODE_COUNTDOWN:
+	{
+
+		if (keypadPressed[5])
+			mode.countdown = (mode.countdown == COUNTDOWN_MODE_SET) ? COUNTDOWN_MODE_PAUSE : COUNTDOWN_MODE_SET;
+		else if (keypadPressed[7])
+			mode.countdown = (mode.countdown == COUNTDOWN_MODE_PAUSE) ? COUNTDOWN_MODE_FORWARD : COUNTDOWN_MODE_PAUSE;
+
+		segmentDisplayCharacter[0] = convertNumberToChar(countdownTime.hour / 10);
+		segmentDisplayCharacter[1] = convertNumberToChar(countdownTime.hour % 10);
+		segmentDisplayCharacter[2] = convertNumberToChar(countdownTime.minute / 10);
+		segmentDisplayCharacter[3] = convertNumberToChar(countdownTime.minute % 10);
+		segmentDisplayCharacter[4] = convertNumberToChar(countdownTime.second / 10);
+		segmentDisplayCharacter[5] = convertNumberToChar(countdownTime.second % 10);
+		segmentDisplayCharacter[6] = convertNumberToChar(countdownTimestamp % 100 / 10);
+		segmentDisplayCharacter[7] = convertNumberToChar(countdownTimestamp % 10);
+
+		if (mode.countdown == COUNTDOWN_MODE_TIMEOUT && counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+		{
+			for (i = 0; i < 8; i++)
+				segmentDisplayCharacter[i] = ' ';
+		}
+
+		if (mode.countdown == COUNTDOWN_MODE_SET)
+		{
+			if (keypadPressed[0])
+				countdownSelectedDigit = (countdownSelectedDigit + 5) % 6;
+			if (keypadPressed[2])
+				countdownSelectedDigit = (countdownSelectedDigit + 1) % 6;
+			if (keypadPressed[6])
+				switch (countdownSelectedDigit)
+				{
+				case 0:
+					countdownTimestamp += 36000 * 100;
+					break;
+				case 1:
+					countdownTimestamp += 3600 * 100;
+					break;
+				case 2:
+					countdownTimestamp += 600 * 100;
+					break;
+				case 3:
+					countdownTimestamp += 60 * 100;
+					break;
+				case 4:
+					countdownTimestamp += 10 * 100;
+					break;
+				case 5:
+					countdownTimestamp += 1 * 100;
+					break;
+				default:
+					break;
+				}
+			if (keypadPressed[1])
+				switch (countdownSelectedDigit)
+				{
+				case 0:
+					countdownTimestamp -= 36000 * 100;
+					break;
+				case 1:
+					countdownTimestamp -= 3600 * 100;
+					break;
+				case 2:
+					countdownTimestamp -= 600 * 100;
+					break;
+				case 3:
+					countdownTimestamp -= 60 * 100;
+					break;
+				case 4:
+					countdownTimestamp -= 10 * 100;
+					break;
+				case 5:
+					countdownTimestamp -= 1 * 100;
+					break;
+				default:
+					break;
+				}
+			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+				segmentDisplayCharacter[countdownSelectedDigit] = ' ';
+		}
+	}
+	break;
+	case MASTER_MODE_ALARM:
+	{
+	}
+	break;
 	default:
 		break;
 	}
 	for (i = 0; i < 8; i++)
+	{
 		peripheralDeviceOutput.segmentDisplayControlWord[i] = getSegmentDisplayControlWord(segmentDisplayCharacter[i]);
+		segmentDisplayCharacter[i] = ' ';
+	}
+
+	if (UARTMessageReceived)
+	{
+		if (strncmp(msg, "set", 3))
+		{
+			;
+		}
+	}
 }
 void UART0_Handler(void)
 {
@@ -492,23 +635,12 @@ void UART0_Handler(void)
 	ulStatus = UARTIntStatus(UART0_BASE, true);
 	UARTIntClear(UART0_BASE, ulStatus);
 
-	// if (ulStatus == UART_INT_RX)
-	// {
-	// 	tail = msg;
-	// }
-	// else if (ulStatus == UART_INT_RT)
-	// {
-	// 	tail = tail;
-	// }
-
-	// while (UARTCharsAvail(UART0_BASE))
-	// {
-	// 	*tail++ = UARTCharGetNonBlocking(UART0_BASE);
-	// }
-	// *tail = '\0';
-	// receiveFinishedCountdown = 0;
-	// UARTStringPut(msg);
-	// UARTStringPut("\n");
+	while (UARTCharsAvail(UART0_BASE))
+	{
+		*(peripheralDeviceInput.UARTMessageTail++) = UARTCharGetNonBlocking(UART0_BASE);
+	}
+	*(peripheralDeviceInput.UARTMessageTail) = '\0';
+	peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 0;
 }
 uint8_t I2C0_WriteByte(uint8_t DevAddr, uint8_t RegAddr, uint8_t WriteData)
 {
