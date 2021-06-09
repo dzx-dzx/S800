@@ -380,7 +380,7 @@ void SysTick_Handler(void)
 	}
 
 	//Keypad及按钮状态.
-	if (counter % (SYSTICK_FREQUENCY * 50 / 1000) == 0) //50ms
+	if (counter % (SYSTICK_FREQUENCY * 20 / 1000) == 0) //20ms
 	{
 		for (i = 0; i < 8; i++)
 		{
@@ -640,6 +640,7 @@ void SysTick_Handler(void)
 				countdownSelectedDigit = (countdownSelectedDigit + 5) % 6;
 			if (keypadPressed[2])
 				countdownSelectedDigit = (countdownSelectedDigit + 1) % 6;
+			countdownTimestamp += 86400 * 100;
 			if (keypadPressed[6])
 				switch (countdownSelectedDigit)
 				{
@@ -688,8 +689,8 @@ void SysTick_Handler(void)
 				default:
 					break;
 				}
-			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-				segmentDisplayCharacter[countdownSelectedDigit] = ' ';
+			countdownTimestamp %= 86400 * 100;
+			segmentDisplayBlink(segmentDisplayCharacter, counter, 1 << countdownSelectedDigit);
 		}
 	}
 	break;
@@ -775,13 +776,11 @@ void SysTick_Handler(void)
 				}
 			}
 			alarmTimestamp[alarmOrdinalNumber] %= 86400 * 100;
-			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-				segmentDisplayCharacter[alarmSelectedDigit] = ' ';
+			segmentDisplayBlink(segmentDisplayCharacter, counter, 1 << alarmSelectedDigit);
 		}
-		if (mode.alarm == ALARM_MODE_RINGING && counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+		if (mode.alarm == ALARM_MODE_RINGING)
 		{
-			for (i = 0; i < 8; i++)
-				segmentDisplayCharacter[i] = ' ';
+			segmentDisplayBlink(segmentDisplayCharacter, counter, 0xff);
 		}
 	}
 
