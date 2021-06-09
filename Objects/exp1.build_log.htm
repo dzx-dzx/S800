@@ -30,19 +30,19 @@ Rebuild target 'Target 1'
 assembling startup_TM4C129.s...
 compiling system_TM4C129.c...
 compiling exp2-1.c...
-exp2-1.c(201): warning:  #550-D: variable "result"  was set but never used
+exp2-1.c(203): warning:  #550-D: variable "result"  was set but never used
   	uint8_t result;
-exp2-1.c(233): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
+exp2-1.c(235): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
   	UARTStringPut((uint8_t *)"\r\nHello, world!\r\n");
-exp2-1.c(374): warning:  #550-D: variable "keypadHold"  was set but never used
+exp2-1.c(376): warning:  #550-D: variable "keypadHold"  was set but never used
   	uint16_t keypadPressed[8] = {0}, keypadHold[8] = {0};
-exp2-1.c(891): warning:  #550-D: variable "rop"  was set but never used
+exp2-1.c(903): warning:  #550-D: variable "rop"  was set but never used
   	uint8_t value, rop;
-exp2-1.c(919): warning:  #186-D: pointless comparison of unsigned integer with zero
+exp2-1.c(931): warning:  #186-D: pointless comparison of unsigned integer with zero
   	if (number >= 0 && number <= 9)
 exp2-1.c: 5 warnings, 0 errors
 linking...
-Program Size: Code=10420 RO-data=2016 RW-data=60 ZI-data=756  
+Program Size: Code=10500 RO-data=2016 RW-data=60 ZI-data=756  
 FromELF: creating hex file...
 ".\Objects\exp1.axf" - 0 Error(s), 5 Warning(s).
 
@@ -70,9 +70,9 @@ Package Vendor: Keil
    * Component: ARM::CMSIS:CORE:5.0.0
 
    * Component: Keil::Device:Startup:1.0.0
+      Include file:  Device\Include\TM4C129\TM4C129.h
       Source file:   Device\Source\ARM\startup_TM4C129.s
       Source file:   Device\Source\system_TM4C129.c
-      Include file:  Device\Include\TM4C129\TM4C129.h
 Build Time Elapsed:  00:00:02
 </pre>
 </body>

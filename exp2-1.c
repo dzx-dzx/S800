@@ -114,7 +114,7 @@ const uint16_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const uint16_t daysInMonthInLeapYear[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const uint16_t daysInYear = 365;
 const uint16_t daysInLeapYear = 366;
-const uint16_t solarTermsIn2021[] = {0};
+const uint64_t solarTermsIn2021[] = {160981700400,161108879000,161236432600};
 
 bool isLeapYear(uint16_t year);
 void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZone);
@@ -123,6 +123,7 @@ char convertNumberToChar(uint8_t number);
 uint8_t getSegmentDisplayControlWord(char character);
 
 void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_t blinkDigitByte);
+void LEDBlink(uint64_t counter, uint8_t blinkDigitByte);
 void beepPlay(uint32_t *beepFrequency, uint64_t counter, uint16_t *beepSequence);
 
 int main(void)
@@ -158,6 +159,7 @@ int main(void)
 		{
 			flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
 		}
+		I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~peripheralDeviceOutput.LEDDisplayByte);
 
 		PWMOutputState(PWM0_BASE, (PWM_OUT_7_BIT), peripheralDeviceOutput.beepFrequency != 0);
 
@@ -448,7 +450,7 @@ void SysTick_Handler(void)
 	if (buttonPressed[1])
 		mode.master = (mode.master + 1) % NUMBER_OF_MASTER_MODES;
 	//
-	if(bootCountdown>0)
+	if (bootCountdown > 0)
 	{
 		segmentDisplayCharacter[0] = convertNumberToChar(2);
 		segmentDisplayCharacter[1] = convertNumberToChar(1);
@@ -458,372 +460,382 @@ void SysTick_Handler(void)
 		segmentDisplayCharacter[5] = convertNumberToChar(2);
 		segmentDisplayCharacter[6] = convertNumberToChar(7);
 		segmentDisplayCharacter[7] = convertNumberToChar(9);
-		segmentDisplayBlink(segmentDisplayCharacter,counter,0xff);
+		segmentDisplayBlink(segmentDisplayCharacter, counter, 0xff);
+		if (counter % (SYSTICK_FREQUENCY * 200 / 1000) == 0)
+		{
+			peripheralDeviceOutput.LEDDisplayByte = ~peripheralDeviceOutput.LEDDisplayByte;
+		}
 		bootCountdown--;
 	}
-	else switch (mode.master)
+	else
 	{
-	case MASTER_MODE_TIME:
-	{
-
-		if (keypadPressed[5])
+		peripheralDeviceOutput.LEDDisplayByte = 0;
+		for (i = 0; i < 8; i++)
+			segmentDisplayCharacter[i] = ' ';
+		switch (mode.master)
 		{
-			mode.time = TIME_MODE_SET;
-			timeSelectedDigit = 5;
-		}
-		else if (keypadPressed[7])
-			mode.time = TIME_MODE_DISPLAY;
-		segmentDisplayCharacter[0] = convertNumberToChar(time.hour / 10);
-		segmentDisplayCharacter[1] = convertNumberToChar(time.hour % 10);
-		segmentDisplayCharacter[2] = convertNumberToChar(time.minute / 10);
-		segmentDisplayCharacter[3] = convertNumberToChar(time.minute % 10);
-		segmentDisplayCharacter[4] = convertNumberToChar(time.second / 10);
-		segmentDisplayCharacter[5] = convertNumberToChar(time.second % 10);
-		segmentDisplayCharacter[6] = convertNumberToChar(timestampInUTC % 100 / 10);
-		segmentDisplayCharacter[7] = convertNumberToChar(timestampInUTC % 10);
-
-		if (mode.time == TIME_MODE_SET)
+		case MASTER_MODE_TIME:
 		{
-			if (keypadPressed[0])
-				timeSelectedDigit = (timeSelectedDigit + 5) % 6;
-			if (keypadPressed[2])
-				timeSelectedDigit = (timeSelectedDigit + 1) % 6;
-			if (keypadPressed[6])
-				switch (timeSelectedDigit)
-				{
-				case 0:
-					timestampInUTC += 36000 * 100;
-					break;
-				case 1:
-					timestampInUTC += 3600 * 100;
-					break;
-				case 2:
-					timestampInUTC += 600 * 100;
-					break;
-				case 3:
-					timestampInUTC += 60 * 100;
-					break;
-				case 4:
-					timestampInUTC += 10 * 100;
-					break;
-				case 5:
-					timestampInUTC += 1 * 100;
-					break;
-				default:
-					break;
-				}
-			if (keypadPressed[1])
-				switch (timeSelectedDigit)
-				{
-				case 0:
-					timestampInUTC -= 36000 * 100;
-					break;
-				case 1:
-					timestampInUTC -= 3600 * 100;
-					break;
-				case 2:
-					timestampInUTC -= 600 * 100;
-					break;
-				case 3:
-					timestampInUTC -= 60 * 100;
-					break;
-				case 4:
-					timestampInUTC -= 10 * 100;
-					break;
-				case 5:
-					timestampInUTC -= 1 * 100;
-					break;
-				default:
-					break;
-				}
-			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-				segmentDisplayCharacter[timeSelectedDigit] = ' ';
-		}
-	}
-	break;
-	case MASTER_MODE_CALENDER:
-	{
-		if (keypadPressed[5])
-		{
-			mode.time = CALENDER_MODE_SET;
-			calenderSelectedDigit = 7;
-		}
-		else if (keypadPressed[7])
-			mode.time = CALENDER_MODE_DISPLAY;
-		segmentDisplayCharacter[0] = convertNumberToChar(time.year % 10000 / 1000);
-		segmentDisplayCharacter[1] = convertNumberToChar(time.year % 1000 / 100);
-		segmentDisplayCharacter[2] = convertNumberToChar(time.year % 100 / 10);
-		segmentDisplayCharacter[3] = convertNumberToChar(time.year % 10);
-		segmentDisplayCharacter[4] = convertNumberToChar((time.month + 1) % 100 / 10);
-		segmentDisplayCharacter[5] = convertNumberToChar((time.month + 1) % 10);
-		segmentDisplayCharacter[6] = convertNumberToChar((time.day + 1) % 100 / 10);
-		segmentDisplayCharacter[7] = convertNumberToChar((time.day + 1) % 10);
 
-		if (mode.time == CALENDER_MODE_SET)
-		{
-			if (keypadPressed[0])
-				do
-				{
-					calenderSelectedDigit = (calenderSelectedDigit + 7) % 8;
-				} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
-			if (keypadPressed[2])
-				do
-				{
-					calenderSelectedDigit = (calenderSelectedDigit + 1) % 8;
-				} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
-			if (keypadPressed[6])
-				switch (calenderSelectedDigit)
-				{
-				case 0:
-					break;
-				case 1:
-					break;
-				case 2:
-					break;
-				case 3:
-					timestampInUTC += (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
-					break;
-				case 4:
-					break;
-				case 5:
-					timestampInUTC += (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100;
-					break;
-				case 6:
-					timestampInUTC += 10 * 86400 * 100;
-					break;
-				case 7:
-					timestampInUTC += 1 * 86400 * 100;
-					break;
-				default:
-					break;
-				}
-			if (keypadPressed[1])
-				switch (calenderSelectedDigit)
-				{
-				case 0:
-					break;
-				case 1:
-					break;
-				case 2:
-					break;
-				case 3:
-					timestampInUTC -= (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
-					break;
-				case 4:
-					break;
-				case 5:
-					timestampInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100; //认为时间真正增加一月.
-					break;
-				case 6:
-					timestampInUTC -= 10 * 86400 * 100;
-					break;
-				case 7:
-					timestampInUTC -= 1 * 86400 * 100;
-					break;
-				default:
-					break;
-				}
-			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-				segmentDisplayCharacter[calenderSelectedDigit] = ' ';
-		}
-	}
-	break;
-	case MASTER_MODE_SOLAR_TERMS:
-	{
-		segmentDisplayCharacter[0] = 'A';
-		segmentDisplayCharacter[1] = 'B';
-		segmentDisplayCharacter[2] = 'C';
-		segmentDisplayCharacter[3] = 'D';
-		segmentDisplayCharacter[4] = 'E';
-		segmentDisplayCharacter[5] = 'F';
-		segmentDisplayCharacter[6] = 'G';
-		segmentDisplayCharacter[7] = 'H';
-	}
-	break;
-	case MASTER_MODE_COUNTDOWN:
-	{
-
-		if (keypadPressed[5])
-			mode.countdown = (mode.countdown == COUNTDOWN_MODE_SET) ? COUNTDOWN_MODE_PAUSE : COUNTDOWN_MODE_SET;
-		else if (keypadPressed[7])
-			mode.countdown = (mode.countdown == COUNTDOWN_MODE_PAUSE) ? COUNTDOWN_MODE_FORWARD : COUNTDOWN_MODE_PAUSE;
-
-		segmentDisplayCharacter[0] = convertNumberToChar(countdownTime.hour / 10);
-		segmentDisplayCharacter[1] = convertNumberToChar(countdownTime.hour % 10);
-		segmentDisplayCharacter[2] = convertNumberToChar(countdownTime.minute / 10);
-		segmentDisplayCharacter[3] = convertNumberToChar(countdownTime.minute % 10);
-		segmentDisplayCharacter[4] = convertNumberToChar(countdownTime.second / 10);
-		segmentDisplayCharacter[5] = convertNumberToChar(countdownTime.second % 10);
-		segmentDisplayCharacter[6] = convertNumberToChar(countdownTimestamp % 100 / 10);
-		segmentDisplayCharacter[7] = convertNumberToChar(countdownTimestamp % 10);
-
-		if (mode.countdown == COUNTDOWN_MODE_TIMEOUT && counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
-		{
-			for (i = 0; i < 8; i++)
-				segmentDisplayCharacter[i] = ' ';
-		}
-
-		if (mode.countdown == COUNTDOWN_MODE_SET)
-		{
-			if (keypadPressed[0])
-				countdownSelectedDigit = (countdownSelectedDigit + 5) % 6;
-			if (keypadPressed[2])
-				countdownSelectedDigit = (countdownSelectedDigit + 1) % 6;
-			countdownTimestamp += 86400 * 100;
-			if (keypadPressed[6])
-				switch (countdownSelectedDigit)
-				{
-				case 0:
-					countdownTimestamp += 36000 * 100;
-					break;
-				case 1:
-					countdownTimestamp += 3600 * 100;
-					break;
-				case 2:
-					countdownTimestamp += 600 * 100;
-					break;
-				case 3:
-					countdownTimestamp += 60 * 100;
-					break;
-				case 4:
-					countdownTimestamp += 10 * 100;
-					break;
-				case 5:
-					countdownTimestamp += 1 * 100;
-					break;
-				default:
-					break;
-				}
-			if (keypadPressed[1])
-				switch (countdownSelectedDigit)
-				{
-				case 0:
-					countdownTimestamp -= 36000 * 100;
-					break;
-				case 1:
-					countdownTimestamp -= 3600 * 100;
-					break;
-				case 2:
-					countdownTimestamp -= 600 * 100;
-					break;
-				case 3:
-					countdownTimestamp -= 60 * 100;
-					break;
-				case 4:
-					countdownTimestamp -= 10 * 100;
-					break;
-				case 5:
-					countdownTimestamp -= 1 * 100;
-					break;
-				default:
-					break;
-				}
-			countdownTimestamp %= 86400 * 100;
-			segmentDisplayBlink(segmentDisplayCharacter, counter, 1 << countdownSelectedDigit);
-		}
-	}
-	break;
-	case MASTER_MODE_ALARM:
-	{
-		if (keypadPressed[4])
-			alarmOrdinalNumber = (alarmOrdinalNumber + 1) % NUMBER_OF_ALARMS;
-		if (keypadPressed[3])
-			alarmOrdinalNumber = (alarmOrdinalNumber + NUMBER_OF_ALARMS - 1) % NUMBER_OF_ALARMS;
-
-		if (keypadPressed[5])
-		{
-			mode.alarm = ALARM_MODE_SET;
-			alarmSelectedDigit = 7;
-		}
-		else if (keypadPressed[7])
-			mode.alarm = ALARM_MODE_DISPLAY;
-		segmentDisplayCharacter[0] = convertNumberToChar(alarmOrdinalNumber);
-		segmentDisplayCharacter[1] = ' ';
-		segmentDisplayCharacter[2] = convertNumberToChar(alarmTime[alarmOrdinalNumber].hour / 10);
-		segmentDisplayCharacter[3] = convertNumberToChar(alarmTime[alarmOrdinalNumber].hour % 10);
-		segmentDisplayCharacter[4] = convertNumberToChar(alarmTime[alarmOrdinalNumber].minute / 10);
-		segmentDisplayCharacter[5] = convertNumberToChar(alarmTime[alarmOrdinalNumber].minute % 10);
-		segmentDisplayCharacter[6] = convertNumberToChar(alarmTime[alarmOrdinalNumber].second / 10);
-		segmentDisplayCharacter[7] = convertNumberToChar(alarmTime[alarmOrdinalNumber].second % 10);
-
-		if (mode.alarm == ALARM_MODE_SET)
-		{
-			if (keypadPressed[0])
-				alarmSelectedDigit = (alarmSelectedDigit - 2 + 5) % 6 + 2;
-			if (keypadPressed[2])
-				alarmSelectedDigit = (alarmSelectedDigit - 2 + 1) % 6 + 2;
-			alarmTimestamp[alarmOrdinalNumber] += 86400 * 100;
-			if (keypadPressed[6])
-				switch (alarmSelectedDigit)
-				{
-				case 2:
-					alarmTimestamp[alarmOrdinalNumber] += 36000 * 100;
-					break;
-				case 3:
-					alarmTimestamp[alarmOrdinalNumber] += 3600 * 100;
-					break;
-				case 4:
-					alarmTimestamp[alarmOrdinalNumber] += 600 * 100;
-					break;
-				case 5:
-					alarmTimestamp[alarmOrdinalNumber] += 60 * 100;
-					break;
-				case 6:
-					alarmTimestamp[alarmOrdinalNumber] += 10 * 100;
-					break;
-				case 7:
-					alarmTimestamp[alarmOrdinalNumber] += 1 * 100;
-					break;
-				default:
-					break;
-				}
-			if (keypadPressed[1])
+			if (keypadPressed[5])
 			{
-
-				switch (alarmSelectedDigit)
-				{
-				case 2:
-					alarmTimestamp[alarmOrdinalNumber] -= 36000 * 100;
-					break;
-				case 3:
-					alarmTimestamp[alarmOrdinalNumber] -= 3600 * 100;
-					break;
-				case 4:
-					alarmTimestamp[alarmOrdinalNumber] -= 600 * 100;
-					break;
-				case 5:
-					alarmTimestamp[alarmOrdinalNumber] -= 60 * 100;
-					break;
-				case 6:
-					alarmTimestamp[alarmOrdinalNumber] -= 10 * 100;
-					break;
-				case 7:
-					alarmTimestamp[alarmOrdinalNumber] -= 1 * 100;
-					break;
-				default:
-					break;
-				}
+				mode.time = TIME_MODE_SET;
+				timeSelectedDigit = 5;
 			}
-			alarmTimestamp[alarmOrdinalNumber] %= 86400 * 100;
-			segmentDisplayBlink(segmentDisplayCharacter, counter, 1 << alarmSelectedDigit);
+			else if (keypadPressed[7])
+				mode.time = TIME_MODE_DISPLAY;
+			segmentDisplayCharacter[0] = convertNumberToChar(time.hour / 10);
+			segmentDisplayCharacter[1] = convertNumberToChar(time.hour % 10);
+			segmentDisplayCharacter[2] = convertNumberToChar(time.minute / 10);
+			segmentDisplayCharacter[3] = convertNumberToChar(time.minute % 10);
+			segmentDisplayCharacter[4] = convertNumberToChar(time.second / 10);
+			segmentDisplayCharacter[5] = convertNumberToChar(time.second % 10);
+			segmentDisplayCharacter[6] = convertNumberToChar(timestampInUTC % 100 / 10);
+			segmentDisplayCharacter[7] = convertNumberToChar(timestampInUTC % 10);
+
+			if (mode.time == TIME_MODE_SET)
+			{
+				if (keypadPressed[0])
+					timeSelectedDigit = (timeSelectedDigit + 5) % 6;
+				if (keypadPressed[2])
+					timeSelectedDigit = (timeSelectedDigit + 1) % 6;
+				if (keypadPressed[6])
+					switch (timeSelectedDigit)
+					{
+					case 0:
+						timestampInUTC += 36000 * 100;
+						break;
+					case 1:
+						timestampInUTC += 3600 * 100;
+						break;
+					case 2:
+						timestampInUTC += 600 * 100;
+						break;
+					case 3:
+						timestampInUTC += 60 * 100;
+						break;
+					case 4:
+						timestampInUTC += 10 * 100;
+						break;
+					case 5:
+						timestampInUTC += 1 * 100;
+						break;
+					default:
+						break;
+					}
+				if (keypadPressed[1])
+					switch (timeSelectedDigit)
+					{
+					case 0:
+						timestampInUTC -= 36000 * 100;
+						break;
+					case 1:
+						timestampInUTC -= 3600 * 100;
+						break;
+					case 2:
+						timestampInUTC -= 600 * 100;
+						break;
+					case 3:
+						timestampInUTC -= 60 * 100;
+						break;
+					case 4:
+						timestampInUTC -= 10 * 100;
+						break;
+					case 5:
+						timestampInUTC -= 1 * 100;
+						break;
+					default:
+						break;
+					}
+				if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+					segmentDisplayCharacter[timeSelectedDigit] = ' ';
+			}
 		}
-		if (mode.alarm == ALARM_MODE_RINGING)
-		{
-			segmentDisplayBlink(segmentDisplayCharacter, counter, 0xff);
-		}
-	}
-	break;
-	case MASTER_MODE_BOOT:
-	{
-		mode.master = MASTER_MODE_TIME;
-		EEPROMRead(&timestampInUTCLowBit, 0x400, sizeof(timestampInUTCLowBit));
-		EEPROMRead(&timestampInUTCHighBit, 0x400 + sizeof(timestampInUTCLowBit), sizeof(timestampInUTCHighBit));
-		timestampInUTC = (uint64_t)timestampInUTCLowBit + (((uint64_t)timestampInUTCHighBit) << 32);
-		bootCountdown=SYSTICK_FREQUENCY*6;
-	}
-	break;
-	default:
 		break;
+		case MASTER_MODE_CALENDER:
+		{
+			if (keypadPressed[5])
+			{
+				mode.time = CALENDER_MODE_SET;
+				calenderSelectedDigit = 7;
+			}
+			else if (keypadPressed[7])
+				mode.time = CALENDER_MODE_DISPLAY;
+			segmentDisplayCharacter[0] = convertNumberToChar(time.year % 10000 / 1000);
+			segmentDisplayCharacter[1] = convertNumberToChar(time.year % 1000 / 100);
+			segmentDisplayCharacter[2] = convertNumberToChar(time.year % 100 / 10);
+			segmentDisplayCharacter[3] = convertNumberToChar(time.year % 10);
+			segmentDisplayCharacter[4] = convertNumberToChar((time.month + 1) % 100 / 10);
+			segmentDisplayCharacter[5] = convertNumberToChar((time.month + 1) % 10);
+			segmentDisplayCharacter[6] = convertNumberToChar((time.day + 1) % 100 / 10);
+			segmentDisplayCharacter[7] = convertNumberToChar((time.day + 1) % 10);
+
+			if (mode.time == CALENDER_MODE_SET)
+			{
+				if (keypadPressed[0])
+					do
+					{
+						calenderSelectedDigit = (calenderSelectedDigit + 7) % 8;
+					} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
+				if (keypadPressed[2])
+					do
+					{
+						calenderSelectedDigit = (calenderSelectedDigit + 1) % 8;
+					} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
+				if (keypadPressed[6])
+					switch (calenderSelectedDigit)
+					{
+					case 0:
+						break;
+					case 1:
+						break;
+					case 2:
+						break;
+					case 3:
+						timestampInUTC += (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
+						break;
+					case 4:
+						break;
+					case 5:
+						timestampInUTC += (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100;
+						break;
+					case 6:
+						timestampInUTC += 10 * 86400 * 100;
+						break;
+					case 7:
+						timestampInUTC += 1 * 86400 * 100;
+						break;
+					default:
+						break;
+					}
+				if (keypadPressed[1])
+					switch (calenderSelectedDigit)
+					{
+					case 0:
+						break;
+					case 1:
+						break;
+					case 2:
+						break;
+					case 3:
+						timestampInUTC -= (uint32_t)(((time.month <= 2 && isLeapYear(time.year)) || (time.month > 2 && isLeapYear(time.year + 1))) ? daysInLeapYear : daysInYear) * 86400 * 100;
+						break;
+					case 4:
+						break;
+					case 5:
+						timestampInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100; //认为时间真正增加一月.
+						break;
+					case 6:
+						timestampInUTC -= 10 * 86400 * 100;
+						break;
+					case 7:
+						timestampInUTC -= 1 * 86400 * 100;
+						break;
+					default:
+						break;
+					}
+				if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+					segmentDisplayCharacter[calenderSelectedDigit] = ' ';
+			}
+		}
+		break;
+		case MASTER_MODE_SOLAR_TERMS:
+		{
+			segmentDisplayCharacter[0] = 'A';
+			segmentDisplayCharacter[1] = 'B';
+			segmentDisplayCharacter[2] = 'C';
+			segmentDisplayCharacter[3] = 'D';
+			segmentDisplayCharacter[4] = 'E';
+			segmentDisplayCharacter[5] = 'F';
+			segmentDisplayCharacter[6] = 'G';
+			segmentDisplayCharacter[7] = 'H';
+		}
+		break;
+		case MASTER_MODE_COUNTDOWN:
+		{
+
+			if (keypadPressed[5])
+				mode.countdown = (mode.countdown == COUNTDOWN_MODE_SET) ? COUNTDOWN_MODE_PAUSE : COUNTDOWN_MODE_SET;
+			else if (keypadPressed[7])
+				mode.countdown = (mode.countdown == COUNTDOWN_MODE_PAUSE) ? COUNTDOWN_MODE_FORWARD : COUNTDOWN_MODE_PAUSE;
+
+			segmentDisplayCharacter[0] = convertNumberToChar(countdownTime.hour / 10);
+			segmentDisplayCharacter[1] = convertNumberToChar(countdownTime.hour % 10);
+			segmentDisplayCharacter[2] = convertNumberToChar(countdownTime.minute / 10);
+			segmentDisplayCharacter[3] = convertNumberToChar(countdownTime.minute % 10);
+			segmentDisplayCharacter[4] = convertNumberToChar(countdownTime.second / 10);
+			segmentDisplayCharacter[5] = convertNumberToChar(countdownTime.second % 10);
+			segmentDisplayCharacter[6] = convertNumberToChar(countdownTimestamp % 100 / 10);
+			segmentDisplayCharacter[7] = convertNumberToChar(countdownTimestamp % 10);
+
+			if (mode.countdown == COUNTDOWN_MODE_TIMEOUT && counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+			{
+				for (i = 0; i < 8; i++)
+					segmentDisplayCharacter[i] = ' ';
+			}
+
+			if (mode.countdown == COUNTDOWN_MODE_SET)
+			{
+				if (keypadPressed[0])
+					countdownSelectedDigit = (countdownSelectedDigit + 5) % 6;
+				if (keypadPressed[2])
+					countdownSelectedDigit = (countdownSelectedDigit + 1) % 6;
+				countdownTimestamp += 86400 * 100;
+				if (keypadPressed[6])
+					switch (countdownSelectedDigit)
+					{
+					case 0:
+						countdownTimestamp += 36000 * 100;
+						break;
+					case 1:
+						countdownTimestamp += 3600 * 100;
+						break;
+					case 2:
+						countdownTimestamp += 600 * 100;
+						break;
+					case 3:
+						countdownTimestamp += 60 * 100;
+						break;
+					case 4:
+						countdownTimestamp += 10 * 100;
+						break;
+					case 5:
+						countdownTimestamp += 1 * 100;
+						break;
+					default:
+						break;
+					}
+				if (keypadPressed[1])
+					switch (countdownSelectedDigit)
+					{
+					case 0:
+						countdownTimestamp -= 36000 * 100;
+						break;
+					case 1:
+						countdownTimestamp -= 3600 * 100;
+						break;
+					case 2:
+						countdownTimestamp -= 600 * 100;
+						break;
+					case 3:
+						countdownTimestamp -= 60 * 100;
+						break;
+					case 4:
+						countdownTimestamp -= 10 * 100;
+						break;
+					case 5:
+						countdownTimestamp -= 1 * 100;
+						break;
+					default:
+						break;
+					}
+				countdownTimestamp %= 86400 * 100;
+				segmentDisplayBlink(segmentDisplayCharacter, counter, 1 << countdownSelectedDigit);
+			}
+		}
+		break;
+		case MASTER_MODE_ALARM:
+		{
+			if (keypadPressed[4])
+				alarmOrdinalNumber = (alarmOrdinalNumber + 1) % NUMBER_OF_ALARMS;
+			if (keypadPressed[3])
+				alarmOrdinalNumber = (alarmOrdinalNumber + NUMBER_OF_ALARMS - 1) % NUMBER_OF_ALARMS;
+
+			if (keypadPressed[5])
+			{
+				mode.alarm = ALARM_MODE_SET;
+				alarmSelectedDigit = 7;
+			}
+			else if (keypadPressed[7])
+				mode.alarm = ALARM_MODE_DISPLAY;
+			segmentDisplayCharacter[0] = convertNumberToChar(alarmOrdinalNumber);
+			segmentDisplayCharacter[1] = ' ';
+			segmentDisplayCharacter[2] = convertNumberToChar(alarmTime[alarmOrdinalNumber].hour / 10);
+			segmentDisplayCharacter[3] = convertNumberToChar(alarmTime[alarmOrdinalNumber].hour % 10);
+			segmentDisplayCharacter[4] = convertNumberToChar(alarmTime[alarmOrdinalNumber].minute / 10);
+			segmentDisplayCharacter[5] = convertNumberToChar(alarmTime[alarmOrdinalNumber].minute % 10);
+			segmentDisplayCharacter[6] = convertNumberToChar(alarmTime[alarmOrdinalNumber].second / 10);
+			segmentDisplayCharacter[7] = convertNumberToChar(alarmTime[alarmOrdinalNumber].second % 10);
+
+			if (mode.alarm == ALARM_MODE_SET)
+			{
+				if (keypadPressed[0])
+					alarmSelectedDigit = (alarmSelectedDigit - 2 + 5) % 6 + 2;
+				if (keypadPressed[2])
+					alarmSelectedDigit = (alarmSelectedDigit - 2 + 1) % 6 + 2;
+				alarmTimestamp[alarmOrdinalNumber] += 86400 * 100;
+				if (keypadPressed[6])
+					switch (alarmSelectedDigit)
+					{
+					case 2:
+						alarmTimestamp[alarmOrdinalNumber] += 36000 * 100;
+						break;
+					case 3:
+						alarmTimestamp[alarmOrdinalNumber] += 3600 * 100;
+						break;
+					case 4:
+						alarmTimestamp[alarmOrdinalNumber] += 600 * 100;
+						break;
+					case 5:
+						alarmTimestamp[alarmOrdinalNumber] += 60 * 100;
+						break;
+					case 6:
+						alarmTimestamp[alarmOrdinalNumber] += 10 * 100;
+						break;
+					case 7:
+						alarmTimestamp[alarmOrdinalNumber] += 1 * 100;
+						break;
+					default:
+						break;
+					}
+				if (keypadPressed[1])
+				{
+
+					switch (alarmSelectedDigit)
+					{
+					case 2:
+						alarmTimestamp[alarmOrdinalNumber] -= 36000 * 100;
+						break;
+					case 3:
+						alarmTimestamp[alarmOrdinalNumber] -= 3600 * 100;
+						break;
+					case 4:
+						alarmTimestamp[alarmOrdinalNumber] -= 600 * 100;
+						break;
+					case 5:
+						alarmTimestamp[alarmOrdinalNumber] -= 60 * 100;
+						break;
+					case 6:
+						alarmTimestamp[alarmOrdinalNumber] -= 10 * 100;
+						break;
+					case 7:
+						alarmTimestamp[alarmOrdinalNumber] -= 1 * 100;
+						break;
+					default:
+						break;
+					}
+				}
+				alarmTimestamp[alarmOrdinalNumber] %= 86400 * 100;
+				segmentDisplayBlink(segmentDisplayCharacter, counter, 1 << alarmSelectedDigit);
+			}
+			if (mode.alarm == ALARM_MODE_RINGING)
+			{
+				segmentDisplayBlink(segmentDisplayCharacter, counter, 0xff);
+			}
+		}
+		break;
+		case MASTER_MODE_BOOT:
+		{
+			mode.master = MASTER_MODE_TIME;
+			EEPROMRead(&timestampInUTCLowBit, 0x400, sizeof(timestampInUTCLowBit));
+			EEPROMRead(&timestampInUTCHighBit, 0x400 + sizeof(timestampInUTCLowBit), sizeof(timestampInUTCHighBit));
+			timestampInUTC = (uint64_t)timestampInUTCLowBit + (((uint64_t)timestampInUTCHighBit) << 32);
+			bootCountdown = SYSTICK_FREQUENCY * 6;
+		}
+		break;
+		default:
+			break;
+		}
 	}
 	for (i = 0; i < 8; i++)
 	{
@@ -831,7 +843,7 @@ void SysTick_Handler(void)
 		segmentDisplayCharacter[i] = ' ';
 	}
 
-	if (mode.alarm == ALARM_MODE_RINGING)
+	if (mode.alarm == ALARM_MODE_RINGING || mode.countdown == COUNTDOWN_MODE_TIMEOUT)
 		peripheralDeviceOutput.beepFrequency = 2000;
 	else
 		peripheralDeviceOutput.beepFrequency = 0;
