@@ -16,3 +16,4 @@
 .\objects\exp2-1.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 .\objects\exp2-1.o: .\driverlib\qei.h
 .\objects\exp2-1.o: .\driverlib\pwm.h
+.\objects\exp2-1.o: .\driverlib\eeprom.h

@@ -17,6 +17,7 @@
 #include "string.h"
 #include "qei.h"
 #include "pwm.h"
+#include "eeprom.h"
 
 //*****************************************************************************
 //
@@ -144,10 +145,15 @@ int main(void)
 	S800_QEI_Init();
 	S800_PWM_Init();
 
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_EEPROM0);
+	while (!SysCtlPeripheralReady(SYSCTL_PERIPH_EEPROM0))
+		;
+
+	EEPROMInit();
+
 	while (1)
 	{
 
-		//I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT0,0xff);
 		for (i = 0; i < 8; i++)
 		{
 			flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
@@ -329,12 +335,15 @@ void SysTick_Handler(void)
 
 	struct Time time;
 	static uint64_t timestampInUTC = 162309904000; //单位为0.01s
+	uint32_t timestampInUTCHighBit = (timestampInUTC >> 32) & 0xffffffff, timestampInUTCLowBit = timestampInUTC & 0xffffffff;
 
 	struct Time countdownTime;
 	static uint64_t countdownTimestamp;
 
 	struct Time alarmTime[NUMBER_OF_ALARMS];
 	static uint64_t alarmTimestamp[NUMBER_OF_ALARMS];
+
+	static uint16_t bootCountdown;
 
 	struct Mode
 	{
@@ -345,7 +354,7 @@ void SysTick_Handler(void)
 		uint8_t alarm;
 	};
 	static struct Mode mode = {
-		MASTER_MODE_CALENDER,
+		MASTER_MODE_BOOT,
 		TIME_MODE_DISPLAY,
 		CALENDER_MODE_DISPLAY,
 		COUNTDOWN_MODE_PAUSE,
@@ -398,6 +407,14 @@ void SysTick_Handler(void)
 		}
 	}
 
+	//重启:
+	if (buttonHold[0] && buttonHold[1])
+	{
+		EEPROMProgram(&timestampInUTCLowBit, 0x400, sizeof(timestampInUTCLowBit));
+		EEPROMProgram(&timestampInUTCHighBit, 0x400 + sizeof(timestampInUTCLowBit), sizeof(timestampInUTCHighBit));
+		SysCtlReset();
+	}
+
 	//时间控制.
 	if (mode.time == TIME_MODE_DISPLAY && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
 		timestampInUTC++;
@@ -430,9 +447,21 @@ void SysTick_Handler(void)
 		mode.master = (mode.master + NUMBER_OF_MASTER_MODES - 1) % NUMBER_OF_MASTER_MODES;
 	if (buttonPressed[1])
 		mode.master = (mode.master + 1) % NUMBER_OF_MASTER_MODES;
-	UARTCharPut(UART0_BASE, convertNumberToChar(mode.master));
 	//
-	switch (mode.master)
+	if(bootCountdown>0)
+	{
+		segmentDisplayCharacter[0] = convertNumberToChar(2);
+		segmentDisplayCharacter[1] = convertNumberToChar(1);
+		segmentDisplayCharacter[2] = convertNumberToChar(9);
+		segmentDisplayCharacter[3] = convertNumberToChar(1);
+		segmentDisplayCharacter[4] = convertNumberToChar(0);
+		segmentDisplayCharacter[5] = convertNumberToChar(2);
+		segmentDisplayCharacter[6] = convertNumberToChar(7);
+		segmentDisplayCharacter[7] = convertNumberToChar(9);
+		segmentDisplayBlink(segmentDisplayCharacter,counter,0xff);
+		bootCountdown--;
+	}
+	else switch (mode.master)
 	{
 	case MASTER_MODE_TIME:
 	{
@@ -783,7 +812,15 @@ void SysTick_Handler(void)
 			segmentDisplayBlink(segmentDisplayCharacter, counter, 0xff);
 		}
 	}
-
+	break;
+	case MASTER_MODE_BOOT:
+	{
+		mode.master = MASTER_MODE_TIME;
+		EEPROMRead(&timestampInUTCLowBit, 0x400, sizeof(timestampInUTCLowBit));
+		EEPROMRead(&timestampInUTCHighBit, 0x400 + sizeof(timestampInUTCLowBit), sizeof(timestampInUTCHighBit));
+		timestampInUTC = (uint64_t)timestampInUTCLowBit + (((uint64_t)timestampInUTCHighBit) << 32);
+		bootCountdown=SYSTICK_FREQUENCY*6;
+	}
 	break;
 	default:
 		break;

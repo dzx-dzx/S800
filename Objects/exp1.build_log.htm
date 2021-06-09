@@ -30,23 +30,21 @@ Rebuild target 'Target 1'
 assembling startup_TM4C129.s...
 compiling system_TM4C129.c...
 compiling exp2-1.c...
-exp2-1.c(195): warning:  #550-D: variable "result"  was set but never used
+exp2-1.c(201): warning:  #550-D: variable "result"  was set but never used
   	uint8_t result;
-exp2-1.c(227): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
+exp2-1.c(233): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
   	UARTStringPut((uint8_t *)"\r\nHello, world!\r\n");
-exp2-1.c(365): warning:  #550-D: variable "keypadHold"  was set but never used
+exp2-1.c(374): warning:  #550-D: variable "keypadHold"  was set but never used
   	uint16_t keypadPressed[8] = {0}, keypadHold[8] = {0};
-exp2-1.c(366): warning:  #550-D: variable "buttonHold"  was set but never used
-  	uint16_t buttonPressed[2] = {0}, buttonHold[2] = {0};
-exp2-1.c(854): warning:  #550-D: variable "rop"  was set but never used
+exp2-1.c(891): warning:  #550-D: variable "rop"  was set but never used
   	uint8_t value, rop;
-exp2-1.c(882): warning:  #186-D: pointless comparison of unsigned integer with zero
+exp2-1.c(919): warning:  #186-D: pointless comparison of unsigned integer with zero
   	if (number >= 0 && number <= 9)
-exp2-1.c: 6 warnings, 0 errors
+exp2-1.c: 5 warnings, 0 errors
 linking...
-Program Size: Code=9624 RO-data=2016 RW-data=56 ZI-data=752  
+Program Size: Code=10420 RO-data=2016 RW-data=60 ZI-data=756  
 FromELF: creating hex file...
-".\Objects\exp1.axf" - 0 Error(s), 6 Warning(s).
+".\Objects\exp1.axf" - 0 Error(s), 5 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -75,7 +73,7 @@ Package Vendor: Keil
       Source file:   Device\Source\ARM\startup_TM4C129.s
       Source file:   Device\Source\system_TM4C129.c
       Include file:  Device\Include\TM4C129\TM4C129.h
-Build Time Elapsed:  00:00:01
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>

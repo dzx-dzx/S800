@@ -139,7 +139,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGTARM</Key>
-          <Name>(1010=-1,-1,-1,-1,0)(1007=-1,-1,-1,-1,0)(1008=-1,-1,-1,-1,0)(1009=-1,-1,-1,-1,0)(1012=-1,-1,-1,-1,0)</Name>
+          <Name>(1010=-1,-1,-1,-1,0)(1007=-1,-1,-1,-1,0)(1008=90,121,466,357,0)(1009=-1,-1,-1,-1,0)(1012=-1,-1,-1,-1,0)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -161,9 +161,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>100</LineNumber>
+          <LineNumber>411</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>4192</Address>
+          <Address>5456</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -172,14 +172,14 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\exp2-1.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\exp1\exp2-1.c\100</Expression>
+          <Expression>\\exp1\exp2-1.c\411</Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>199</LineNumber>
+          <LineNumber>803</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>3612</Address>
+          <Address>9424</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -188,7 +188,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\exp2-1.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\exp1\exp2-1.c\199</Expression>
+          <Expression>\\exp1\exp2-1.c\803</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -225,14 +225,26 @@
         <Ww>
           <count>6</count>
           <WinNumber>1</WinNumber>
-          <ItemText>peripheralDeviceInput.keyboardStateByte</ItemText>
-        </Ww>
-        <Ww>
-          <count>7</count>
-          <WinNumber>1</WinNumber>
           <ItemText>tempKeyboardStateByte</ItemText>
         </Ww>
       </WatchWindow1>
+      <WatchWindow2>
+        <Ww>
+          <count>0</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>timestampInUTCHighBit</ItemText>
+        </Ww>
+        <Ww>
+          <count>1</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>timestampInUTCLowBit</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>timestampInUTC</ItemText>
+        </Ww>
+      </WatchWindow2>
       <Tracepoint>
         <THDelay>0</THDelay>
       </Tracepoint>
