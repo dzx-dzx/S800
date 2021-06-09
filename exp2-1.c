@@ -15,6 +15,8 @@
 #include "systick.h"
 #include "uart.h"
 #include "string.h"
+#include "qei.h"
+#include "pwm.h"
 
 //*****************************************************************************
 //
@@ -59,6 +61,11 @@
 #define COUNTDOWN_MODE_PAUSE 2
 #define COUNTDOWN_MODE_TIMEOUT 3
 #define COUNTDOWN_MODE_SET 4
+#define ALARM_MODE_DISPLAY 0
+#define ALARM_MODE_SET 1
+#define ALARM_MODE_RINGING 2
+
+#define NUMBER_OF_ALARMS 2
 
 void Delay(uint32_t value);
 void UARTStringPut(const char *cMessage);
@@ -70,6 +77,8 @@ void S800_GPIO_Init(void);
 void S800_I2C0_Init(void);
 void S800_Int_Init(void);
 void S800_UART_Init(void);
+void S800_QEI_Init(void);
+void S800_PWM_Init(void);
 
 void flash_seg(uint8_t display_index, uint8_t control_word);
 uint32_t ui32SysClock;
@@ -87,18 +96,33 @@ struct PeripheralDeviceOutput
 {
 	uint8_t segmentDisplayControlWord[8];
 	uint8_t LEDDisplayByte;
+	uint32_t beepFrequency; //Set to 0 to turn off.
+
 } peripheralDeviceOutput;
 
-struct Date
+struct Time
 {
-	uint8_t year, month, day, hour, minute, second;
-} date;
-uint8_t display_mode = 0;
+	uint16_t year;
+	uint16_t month;
+	uint16_t day;
+	uint16_t hour;
+	uint16_t minute;
+	uint16_t second;
+};
+const uint16_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+const uint16_t daysInMonthInLeapYear[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+const uint16_t daysInYear = 365;
+const uint16_t daysInLeapYear = 366;
+const uint16_t solarTermsIn2021[] = {0};
 
 bool isLeapYear(uint16_t year);
+void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZone);
 
 char convertNumberToChar(uint8_t number);
 uint8_t getSegmentDisplayControlWord(char character);
+
+void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_t blinkDigitByte);
+void beepPlay(uint32_t *beepFrequency, uint64_t counter, uint16_t *beepSequence);
 
 int main(void)
 {
@@ -111,11 +135,14 @@ int main(void)
 	peripheralDeviceInput.keyPadStateByte = tempKeyboardStateByte;
 	peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 1926;
 	peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
+	peripheralDeviceOutput.beepFrequency = 0;
 
 	S800_GPIO_Init();
 	S800_I2C0_Init();
 	S800_UART_Init();
 	S800_Int_Init();
+	S800_QEI_Init();
+	S800_PWM_Init();
 
 	while (1)
 	{
@@ -125,6 +152,15 @@ int main(void)
 		{
 			flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
 		}
+
+		PWMOutputState(PWM0_BASE, (PWM_OUT_7_BIT), peripheralDeviceOutput.beepFrequency != 0);
+
+		if (peripheralDeviceOutput.beepFrequency != 0)
+		{
+			PWMGenPeriodSet(PWM0_BASE, PWM_GEN_3, ui32SysClock / peripheralDeviceOutput.beepFrequency);
+			PWMPulseWidthSet(PWM0_BASE, PWM_OUT_7, ui32SysClock / peripheralDeviceOutput.beepFrequency / 3);
+		}
+
 		//在读写操作同时存在的情况下,似乎有时读得数据会变为0x0.取代直接读取按钮状态的代码,下列代码防止错误数据的传入.
 		tempKeyboardStateByte = I2C0_ReadByte(TCA6424_I2CADDR, TCA6424_INPUT_PORT0);
 		if (tempKeyboardStateByte != 0x0)
@@ -136,7 +172,7 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(4000);
+	Delay(2000);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
 }
@@ -204,6 +240,74 @@ void S800_Int_Init(void)
 
 	IntMasterEnable();
 }
+void S800_QEI_Init(void)
+{
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
+	// Enable the QEI0 peripheral
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_QEI0);
+	// Wait for the QEI0 module to be ready.
+	while (!SysCtlPeripheralReady(SYSCTL_PERIPH_QEI0))
+	{
+	}
+
+	GPIOPinConfigure(GPIO_PL1_PHA0);
+	GPIOPinConfigure(GPIO_PL2_PHB0);
+	//software patch to force the PL3 to low voltage
+	GPIOPinTypeGPIOOutput(GPIO_PORTL_BASE, GPIO_PIN_3);
+	GPIOPinWrite(GPIO_PORTL_BASE, GPIO_PIN_3, 0);
+
+	GPIOPinTypeQEI(GPIO_PORTL_BASE, GPIO_PIN_1);
+	GPIOPinTypeQEI(GPIO_PORTL_BASE, GPIO_PIN_2);
+	//
+	// Configure the quadrature encoder to capture edges on both signals and
+	// maintain an absolute position by resetting on index pulses. Using a
+	// 1000 line encoder at four edges per line, there are 4000 pulses per
+	// revolution; therefore set the maximum position to 3999 as the count
+	// is zero based.
+	//
+	QEIConfigure(QEI0_BASE, (QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP), 100);
+	// Enable the quadrature encoder.
+	QEIEnable(QEI0_BASE);
+}
+void S800_PWM_Init(void)
+{
+	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
+	//
+	// Enable the PWM0 peripheral
+	//
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+	//
+	// Wait for the PWM0 module to be ready.
+	//
+	while (!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM0))
+		;
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK); //Enable PortK
+	while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOK))
+		; //Wait for the GPIO moduleN readK
+	GPIOPinConfigure(GPIO_PK5_M0PWM7);
+	GPIOPinTypePWM(GPIO_PORTK_BASE, GPIO_PIN_5);
+	//
+	// Configure the PWM generator for count down mode with immediate updates
+	// to the parameters.
+	//
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_3, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
+	//
+	// Set the period. For a 50 KHz frequency, the period = 1/50,000, or 20
+	// microseconds. For a 20 MHz clock, this translates to 400 clock ticks.
+	// Use this value to set the period.
+	//
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_3, ui32SysClock / 4000);
+
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_7, ui32SysClock / 12000);
+	//
+	// Enable the outputs.
+	//
+	// PWMOutputState(PWM0_BASE, (PWM_OUT_7_BIT), true);
+	//
+	// Start the timers in generator 0.
+	//
+	PWMGenEnable(PWM0_BASE, PWM_GEN_3);
+}
 
 void Delay(uint32_t value)
 {
@@ -221,45 +325,39 @@ void UARTStringPut(const char *cMessage)
 void SysTick_Handler(void)
 {
 	uint8_t i = 0;
+	static uint64_t counter;
 
-	struct Time
-	{
-		uint16_t year;
-		uint16_t month;
-		uint16_t day;
-		uint16_t hour;
-		uint16_t minute;
-		uint16_t second;
-	};
 	struct Time time;
 	static uint64_t timestampInUTC = 162309904000; //单位为0.01s
-	const uint16_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-	const uint16_t daysInMonthInLeapYear[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-	const uint16_t daysInYear = 365;
-	const uint16_t daysInLeapYear = 366;
-	const uint16_t solarTermsIn2021[] = {0};
 
 	struct Time countdownTime;
-	static uint32_t countdownTimestamp;
+	static uint64_t countdownTimestamp;
 
-	static uint32_t counter;
+	struct Time alarmTime[NUMBER_OF_ALARMS];
+	static uint64_t alarmTimestamp[NUMBER_OF_ALARMS];
+
 	struct Mode
 	{
 		uint8_t master;
 		uint8_t time;
 		uint8_t calender;
 		uint8_t countdown;
+		uint8_t alarm;
 	};
 	static struct Mode mode = {
 		MASTER_MODE_CALENDER,
 		TIME_MODE_DISPLAY,
 		CALENDER_MODE_DISPLAY,
-		COUNTDOWN_MODE_PAUSE};
+		COUNTDOWN_MODE_PAUSE,
+		ALARM_MODE_DISPLAY};
 
-	static uint8_t timeSelectedDigit,calenderSelectedDigit,countdownSelectedDigit;
+	static uint8_t timeSelectedDigit, calenderSelectedDigit, countdownSelectedDigit, alarmSelectedDigit;
+	static uint8_t alarmOrdinalNumber;
 
-	static char segmentDisplayCharacter[8];
+	//外设输出
+	char segmentDisplayCharacter[8];
 
+	//外设输入
 	static uint8_t previousKeypadState[8];
 	static uint8_t previousButtonState[2];
 	uint8_t currentKeypadState[8] = {0};
@@ -303,29 +401,8 @@ void SysTick_Handler(void)
 	//时间控制.
 	if (mode.time == TIME_MODE_DISPLAY && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
 		timestampInUTC++;
-	time.second = timestampInUTC / 100 % 60;
-	time.minute = timestampInUTC / 100 % 3600 / 60;
-	time.hour = timestampInUTC / 100 % 86400 / 3600 + 8;
 
-	time.day = timestampInUTC / 100 / 86400;
-	if (time.hour >= 24)
-	{
-		time.hour -= 24;
-		time.day++;
-	}
-	time.year = 1970;
-	time.month = 0;
-
-	while (time.day >= (isLeapYear(time.year) ? daysInLeapYear : daysInYear))
-	{
-		time.day -= (isLeapYear(time.year) ? daysInLeapYear : daysInYear);
-		time.year++;
-	}
-	while (time.day >= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]))
-	{
-		time.day -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]);
-		time.month++;
-	}
+	getTimeFromTimestamp(&time, timestampInUTC, 8);
 
 	//倒计时控制.
 	if (mode.countdown == COUNTDOWN_MODE_FORWARD && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
@@ -335,9 +412,18 @@ void SysTick_Handler(void)
 		else
 			countdownTimestamp--;
 	}
-	countdownTime.second = countdownTimestamp / 100 % 60;
-	countdownTime.minute = countdownTimestamp / 100 % 3600 / 60;
-	countdownTime.hour = countdownTimestamp / 100 % 86400 / 3600;
+	getTimeFromTimestamp(&countdownTime, countdownTimestamp, 0);
+
+	//闹钟控制.
+	for (i = 0; i < NUMBER_OF_ALARMS; i++)
+	{
+		getTimeFromTimestamp(&alarmTime[i], alarmTimestamp[i], 0);
+
+		if (alarmTime[i].hour == time.hour && alarmTime[i].minute == time.minute && alarmTime[i].second == time.second)
+			mode.alarm = ALARM_MODE_RINGING;
+	}
+	if (mode.alarm == ALARM_MODE_RINGING && keypadPressed[7])
+		mode.alarm = ALARM_MODE_DISPLAY;
 
 	//主模式切换.
 	if (buttonPressed[0])
@@ -354,7 +440,7 @@ void SysTick_Handler(void)
 		if (keypadPressed[5])
 		{
 			mode.time = TIME_MODE_SET;
-			timeSelectedDigit = 7;
+			timeSelectedDigit = 5;
 		}
 		else if (keypadPressed[7])
 			mode.time = TIME_MODE_DISPLAY;
@@ -609,7 +695,96 @@ void SysTick_Handler(void)
 	break;
 	case MASTER_MODE_ALARM:
 	{
+		if (keypadPressed[4])
+			alarmOrdinalNumber = (alarmOrdinalNumber + 1) % NUMBER_OF_ALARMS;
+		if (keypadPressed[3])
+			alarmOrdinalNumber = (alarmOrdinalNumber + NUMBER_OF_ALARMS - 1) % NUMBER_OF_ALARMS;
+
+		if (keypadPressed[5])
+		{
+			mode.alarm = ALARM_MODE_SET;
+			alarmSelectedDigit = 7;
+		}
+		else if (keypadPressed[7])
+			mode.alarm = ALARM_MODE_DISPLAY;
+		segmentDisplayCharacter[0] = convertNumberToChar(alarmOrdinalNumber);
+		segmentDisplayCharacter[1] = ' ';
+		segmentDisplayCharacter[2] = convertNumberToChar(alarmTime[alarmOrdinalNumber].hour / 10);
+		segmentDisplayCharacter[3] = convertNumberToChar(alarmTime[alarmOrdinalNumber].hour % 10);
+		segmentDisplayCharacter[4] = convertNumberToChar(alarmTime[alarmOrdinalNumber].minute / 10);
+		segmentDisplayCharacter[5] = convertNumberToChar(alarmTime[alarmOrdinalNumber].minute % 10);
+		segmentDisplayCharacter[6] = convertNumberToChar(alarmTime[alarmOrdinalNumber].second / 10);
+		segmentDisplayCharacter[7] = convertNumberToChar(alarmTime[alarmOrdinalNumber].second % 10);
+
+		if (mode.alarm == ALARM_MODE_SET)
+		{
+			if (keypadPressed[0])
+				alarmSelectedDigit = (alarmSelectedDigit - 2 + 5) % 6 + 2;
+			if (keypadPressed[2])
+				alarmSelectedDigit = (alarmSelectedDigit - 2 + 1) % 6 + 2;
+			alarmTimestamp[alarmOrdinalNumber] += 86400 * 100;
+			if (keypadPressed[6])
+				switch (alarmSelectedDigit)
+				{
+				case 2:
+					alarmTimestamp[alarmOrdinalNumber] += 36000 * 100;
+					break;
+				case 3:
+					alarmTimestamp[alarmOrdinalNumber] += 3600 * 100;
+					break;
+				case 4:
+					alarmTimestamp[alarmOrdinalNumber] += 600 * 100;
+					break;
+				case 5:
+					alarmTimestamp[alarmOrdinalNumber] += 60 * 100;
+					break;
+				case 6:
+					alarmTimestamp[alarmOrdinalNumber] += 10 * 100;
+					break;
+				case 7:
+					alarmTimestamp[alarmOrdinalNumber] += 1 * 100;
+					break;
+				default:
+					break;
+				}
+			if (keypadPressed[1])
+			{
+
+				switch (alarmSelectedDigit)
+				{
+				case 2:
+					alarmTimestamp[alarmOrdinalNumber] -= 36000 * 100;
+					break;
+				case 3:
+					alarmTimestamp[alarmOrdinalNumber] -= 3600 * 100;
+					break;
+				case 4:
+					alarmTimestamp[alarmOrdinalNumber] -= 600 * 100;
+					break;
+				case 5:
+					alarmTimestamp[alarmOrdinalNumber] -= 60 * 100;
+					break;
+				case 6:
+					alarmTimestamp[alarmOrdinalNumber] -= 10 * 100;
+					break;
+				case 7:
+					alarmTimestamp[alarmOrdinalNumber] -= 1 * 100;
+					break;
+				default:
+					break;
+				}
+			}
+			alarmTimestamp[alarmOrdinalNumber] %= 86400 * 100;
+			if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+				segmentDisplayCharacter[alarmSelectedDigit] = ' ';
+		}
+		if (mode.alarm == ALARM_MODE_RINGING && counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+		{
+			for (i = 0; i < 8; i++)
+				segmentDisplayCharacter[i] = ' ';
+		}
 	}
+
 	break;
 	default:
 		break;
@@ -619,6 +794,11 @@ void SysTick_Handler(void)
 		peripheralDeviceOutput.segmentDisplayControlWord[i] = getSegmentDisplayControlWord(segmentDisplayCharacter[i]);
 		segmentDisplayCharacter[i] = ' ';
 	}
+
+	if (mode.alarm == ALARM_MODE_RINGING)
+		peripheralDeviceOutput.beepFrequency = 2000;
+	else
+		peripheralDeviceOutput.beepFrequency = 0;
 
 	if (UARTMessageReceived)
 	{
@@ -723,4 +903,44 @@ uint8_t getSegmentDisplayControlWord(char character)
 									  0x80, 0x40, 0x08, 0x00};
 	char *characterPosition = strchr(characterSet, character);
 	return (characterPosition != NULL ? *(controlWordSet + (characterPosition - characterSet)) : 0x0);
+}
+void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZone)
+{
+	time->second = timestamp / 100 % 60;
+	time->minute = timestamp / 100 % 3600 / 60;
+	time->hour = timestamp / 100 % 86400 / 3600 + timeZone;
+
+	time->day = timestamp / 100 / 86400;
+	if (time->hour >= 24)
+	{
+		time->hour -= 24;
+		time->day++;
+	}
+	time->year = 1970;
+	time->month = 0;
+
+	while (time->day >= (isLeapYear(time->year) ? daysInLeapYear : daysInYear))
+	{
+		time->day -= (isLeapYear(time->year) ? daysInLeapYear : daysInYear);
+		time->year++;
+	}
+	while (time->day >= (isLeapYear(time->year) ? daysInMonthInLeapYear[time->month] : daysInMonth[time->month]))
+	{
+		time->day -= (isLeapYear(time->year) ? daysInMonthInLeapYear[time->month] : daysInMonth[time->month]);
+		time->month++;
+	}
+}
+
+void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_t blinkDigitByte)
+{
+	uint8_t i;
+	if (counter % (SYSTICK_FREQUENCY * 200 / 1000) < (SYSTICK_FREQUENCY * 200 / 1000) / 2)
+	{
+		for (i = 0; i < 8; i++)
+			if (blinkDigitByte & 1 << i)
+				segmentDisplayCharacter[i] = ' ';
+	}
+}
+void beepPlay(uint32_t *beepFrequency, uint64_t counter, uint16_t *beepSequence)
+{
 }
