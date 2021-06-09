@@ -1,2 +1,23 @@
-Load "d:\\S800\\Project\\Objects\\exp1.axf" 
-Connecting: Mode=JTAG, Speed=1000000HzErase Done.Programming Done.Verify OK.Flash Load finished at 20:07:03
+*** Using Compiler 'V5.06 update 4 (build 422)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+assembling startup_TM4C129.s...
+compiling system_TM4C129.c...
+compiling exp2-1.c...
+exp2-1.c(195): warning:  #550-D: variable "result"  was set but never used
+  	uint8_t result;
+exp2-1.c(227): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
+  	UARTStringPut((uint8_t *)"\r\nHello, world!\r\n");
+exp2-1.c(365): warning:  #550-D: variable "keypadHold"  was set but never used
+  	uint16_t keypadPressed[8] = {0}, keypadHold[8] = {0};
+exp2-1.c(366): warning:  #550-D: variable "buttonHold"  was set but never used
+  	uint16_t buttonPressed[2] = {0}, buttonHold[2] = {0};
+exp2-1.c(855): warning:  #550-D: variable "rop"  was set but never used
+  	uint8_t value, rop;
+exp2-1.c(883): warning:  #186-D: pointless comparison of unsigned integer with zero
+  	if (number >= 0 && number <= 9)
+exp2-1.c: 6 warnings, 0 errors
+linking...
+Program Size: Code=9574 RO-data=2014 RW-data=56 ZI-data=752  
+FromELF: creating hex file...
+".\Objects\exp1.axf" - 0 Error(s), 6 Warning(s).
+Build Time Elapsed:  00:00:01
