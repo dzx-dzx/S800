@@ -44,7 +44,7 @@
 #define TCA6424_OUTPUT_PORT1 0x05
 #define TCA6424_OUTPUT_PORT2 0x06
 
-#define SYSTICK_FREQUENCY 1000
+#define SYSTICK_FREQUENCY 100
 
 #define MASTER_MODE_CALENDER 0
 #define MASTER_MODE_SOLAR_TERMS 1
@@ -91,7 +91,7 @@ struct PeripheralDeviceInput
 	char UARTMessage[100];
 	char *UARTMessageTail;
 	uint16_t UARTMessageReceiveFinishedCountdown;
-} peripheralDeviceInput;
+} volatile peripheralDeviceInput;
 
 struct PeripheralDeviceOutput
 {
@@ -99,7 +99,7 @@ struct PeripheralDeviceOutput
 	uint8_t LEDDisplayByte;
 	uint32_t beepFrequency; //Set to 0 to turn off.
 
-} peripheralDeviceOutput;
+} volatile peripheralDeviceOutput;
 
 struct Time
 {
@@ -2695,9 +2695,10 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(2500);
+	Delay(1500);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
+	Delay(500);
 }
 
 void S800_GPIO_Init(void)

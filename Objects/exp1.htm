@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\exp1.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\exp1.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Fri Jun 11 17:53:44 2021
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Fri Jun 11 20:24:36 2021
 <BR><P>
 <H3>Maximum Stack Usage =        264 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1657,7 +1657,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[bd]"></a>S800_Int_Init</STRONG> (Thumb, 48 bytes, Stack size 8 bytes, exp2-1.o(i.S800_Int_Init))
+<P><STRONG><a name="[bd]"></a>S800_Int_Init</STRONG> (Thumb, 46 bytes, Stack size 8 bytes, exp2-1.o(i.S800_Int_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = S800_Int_Init &rArr; IntMasterEnable
 </UL>
 <BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UARTIntEnable
@@ -1782,8 +1782,8 @@ Global Symbols
 <P><STRONG><a name="[7a]"></a>SystemInit</STRONG> (Thumb, 20 bytes, Stack size 0 bytes, system_tm4c129.o(i.SystemInit))
 <BR>[Address Reference Count : 1]<UL><LI> startup_tm4c129.o(.text)
 </UL>
-<P><STRONG><a name="[12]"></a>UART0_Handler</STRONG> (Thumb, 68 bytes, Stack size 8 bytes, exp2-1.o(i.UART0_Handler))
-<BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = UART0_Handler
+<P><STRONG><a name="[12]"></a>UART0_Handler</STRONG> (Thumb, 66 bytes, Stack size 16 bytes, exp2-1.o(i.UART0_Handler))
+<BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = UART0_Handler
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UARTIntStatus
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UARTIntClear
@@ -1838,7 +1838,7 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SysTick_Handler
 </UL>
 
-<P><STRONG><a name="[de]"></a>flash_seg</STRONG> (Thumb, 50 bytes, Stack size 16 bytes, exp2-1.o(i.flash_seg))
+<P><STRONG><a name="[de]"></a>flash_seg</STRONG> (Thumb, 58 bytes, Stack size 16 bytes, exp2-1.o(i.flash_seg))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = flash_seg &rArr; I2C0_WriteByte
 </UL>
 <BR>[Calls]<UL><LI><a href="#[b3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C0_WriteByte

@@ -190,21 +190,27 @@ exp2-1.c(1576): warning:  #68-D: integer conversion resulted in a change of sign
   	{-2,
 exp2-1.c(2607): warning:  #260-D: explicit type is missing ("int" assumed)
   const noteFrequency[] = {523,
-exp2-1.c(2718): warning:  #550-D: variable "result"  was set but never used
+exp2-1.c(2654): warning:  #513-D: a value of type "volatile char *" cannot be assigned to an entity of type "char *"
+  	peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
+exp2-1.c(2719): warning:  #550-D: variable "result"  was set but never used
   	uint8_t result;
-exp2-1.c(2750): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
+exp2-1.c(2751): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const char *"
   	UARTStringPut((uint8_t *)"\r\nHello, world!\r\n");
-exp2-1.c(2893): warning:  #550-D: variable "keypadHold"  was set but never used
+exp2-1.c(2898): warning:  #144-D: a value of type "volatile char *" cannot be used to initialize an entity of type "char *"
+  	char *msg = peripheralDeviceInput.UARTMessage;
+exp2-1.c(2908): warning:  #513-D: a value of type "volatile char *" cannot be assigned to an entity of type "char *"
+  		peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
+exp2-1.c(2894): warning:  #550-D: variable "keypadHold"  was set but never used
   	uint16_t keypadPressed[8] = {0}, keypadHold[8] = {0};
-exp2-1.c(3441): warning:  #550-D: variable "rop"  was set but never used
+exp2-1.c(3442): warning:  #550-D: variable "rop"  was set but never used
   	uint8_t value, rop;
-exp2-1.c(3469): warning:  #186-D: pointless comparison of unsigned integer with zero
+exp2-1.c(3470): warning:  #186-D: pointless comparison of unsigned integer with zero
   	if (number >= 0 && number <= 9)
-exp2-1.c: 85 warnings, 0 errors
+exp2-1.c: 88 warnings, 0 errors
 linking...
-Program Size: Code=10648 RO-data=7260 RW-data=64 ZI-data=752  
+Program Size: Code=10656 RO-data=7260 RW-data=64 ZI-data=752  
 FromELF: creating hex file...
-".\Objects\exp1.axf" - 0 Error(s), 85 Warning(s).
+".\Objects\exp1.axf" - 0 Error(s), 88 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -230,10 +236,10 @@ Package Vendor: Keil
    * Component: ARM::CMSIS:CORE:5.0.0
 
    * Component: Keil::Device:Startup:1.0.0
-      Include file:  Device\Include\TM4C129\TM4C129.h
-      Source file:   Device\Source\system_TM4C129.c
       Source file:   Device\Source\ARM\startup_TM4C129.s
-Build Time Elapsed:  00:00:01
+      Source file:   Device\Source\system_TM4C129.c
+      Include file:  Device\Include\TM4C129\TM4C129.h
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>
