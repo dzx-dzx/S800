@@ -2639,44 +2639,7 @@ const noteFrequency[] = {523,
 						 3322,
 						 3520,
 						 3729,
-						 3951}
-// {2093,
-// 						 2217,
-// 						 2349,
-// 						 2489,
-// 						 2637,
-// 						 2794,
-// 						 2960,
-// 						 3136,
-// 						 3322,
-// 						 3520,
-// 						 3729,
-// 						 3951,
-// 						 4186,
-// 						 4435,
-// 						 4699,
-// 						 4978,
-// 						 5274,
-// 						 5588,
-// 						 5920,
-// 						 6272,
-// 						 6645,
-// 						 7040,
-// 						 7459,
-// 						 7902,
-// 						 8372,
-// 						 8870,
-// 						 9397,
-// 						 9956,
-// 						 10548,
-// 						 11175,
-// 						 11840,
-// 						 12544,
-// 						 13290,
-// 						 14080,
-// 						 14917,
-// 						 15804}
-;
+						 3951};
 
 int main(void)
 {
@@ -2707,11 +2670,11 @@ int main(void)
 	while (1)
 	{
 
+		I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~peripheralDeviceOutput.LEDDisplayByte);
 		for (i = 0; i < 8; i++)
 		{
 			flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
 		}
-		I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~peripheralDeviceOutput.LEDDisplayByte);
 
 		PWMOutputState(PWM0_BASE, (PWM_OUT_7_BIT), peripheralDeviceOutput.beepFrequency != 0);
 
@@ -2732,7 +2695,7 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(2000);
+	Delay(2500);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
 }
@@ -3403,7 +3366,7 @@ void SysTick_Handler(void)
 	else
 	{
 
-		if (counter % (SYSTICK_FREQUENCY * 100 / 1000) < (SYSTICK_FREQUENCY * 100 / 1000) / 4)
+		if (counter % (SYSTICK_FREQUENCY * 100 / 1000) == 0)
 		{
 			noteTime++;
 
@@ -3419,9 +3382,9 @@ void SysTick_Handler(void)
 			peripheralDeviceOutput.beepFrequency = noteFrequency[notes[noteIndex][0]];
 		}
 
-		else
-			peripheralDeviceOutput.beepFrequency = 0;
+		peripheralDeviceOutput.beepFrequency = 0;
 	}
+	peripheralDeviceOutput.beepFrequency = 0;
 
 	if (UARTMessageReceived)
 	{
