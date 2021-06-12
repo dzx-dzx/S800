@@ -44,7 +44,7 @@
 #define TCA6424_OUTPUT_PORT1 0x05
 #define TCA6424_OUTPUT_PORT2 0x06
 
-#define SYSTICK_FREQUENCY 100
+#define SYSTICK_FREQUENCY 1000
 
 #define MASTER_MODE_CALENDER 0
 #define MASTER_MODE_SOLAR_TERMS 1
@@ -91,7 +91,7 @@ struct PeripheralDeviceInput
 	char UARTMessage[100];
 	char *UARTMessageTail;
 	uint16_t UARTMessageReceiveFinishedCountdown;
-} volatile peripheralDeviceInput;
+} peripheralDeviceInput;
 
 struct PeripheralDeviceOutput
 {
@@ -99,7 +99,7 @@ struct PeripheralDeviceOutput
 	uint8_t LEDDisplayByte;
 	uint32_t beepFrequency; //Set to 0 to turn off.
 
-} volatile peripheralDeviceOutput;
+} peripheralDeviceOutput;
 
 struct Time
 {
@@ -2604,42 +2604,42 @@ uint8_t getSegmentDisplayControlWord(char character);
 void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_t blinkDigitByte);
 void LEDBlink(uint64_t counter, uint8_t blinkDigitByte);
 void beepPlay(uint32_t *beepFrequency, uint64_t counter, uint16_t *beepSequence);
-const noteFrequency[] = {523,
-						 554,
-						 587,
-						 622,
-						 659,
-						 698,
-						 740,
-						 784,
-						 831,
-						 880,
-						 932,
-						 988,
-						 1047,
-						 1109,
-						 1175,
-						 1245,
-						 1319,
-						 1397,
-						 1480,
-						 1568,
-						 1661,
-						 1760,
-						 1865,
-						 1976,
-						 2093,
-						 2217,
-						 2349,
-						 2489,
-						 2637,
-						 2794,
-						 2960,
-						 3136,
-						 3322,
-						 3520,
-						 3729,
-						 3951};
+const uint16_t noteFrequency[] = {523,
+								  554,
+								  587,
+								  622,
+								  659,
+								  698,
+								  740,
+								  784,
+								  831,
+								  880,
+								  932,
+								  988,
+								  1047,
+								  1109,
+								  1175,
+								  1245,
+								  1319,
+								  1397,
+								  1480,
+								  1568,
+								  1661,
+								  1760,
+								  1865,
+								  1976,
+								  2093,
+								  2217,
+								  2349,
+								  2489,
+								  2637,
+								  2794,
+								  2960,
+								  3136,
+								  3322,
+								  3520,
+								  3729,
+								  3951};
 
 int main(void)
 {
@@ -2673,6 +2673,11 @@ int main(void)
 		I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~peripheralDeviceOutput.LEDDisplayByte);
 		for (i = 0; i < 8; i++)
 		{
+			//在读写操作同时存在的情况下,似乎有时读得数据会变为0x0.取代直接读取按钮状态的代码,下列代码防止错误数据的传入.
+			//放在循环内的原因是减少delay的影响,奇怪的是gpio的读取似乎不必这么做.
+			tempKeyboardStateByte = I2C0_ReadByte(TCA6424_I2CADDR, TCA6424_INPUT_PORT0);
+			if (tempKeyboardStateByte != 0x0)
+				peripheralDeviceInput.keyPadStateByte = tempKeyboardStateByte;
 			flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
 		}
 
@@ -2684,10 +2689,6 @@ int main(void)
 			PWMPulseWidthSet(PWM0_BASE, PWM_OUT_7, ui32SysClock / peripheralDeviceOutput.beepFrequency / 4);
 		}
 
-		//在读写操作同时存在的情况下,似乎有时读得数据会变为0x0.取代直接读取按钮状态的代码,下列代码防止错误数据的传入.
-		tempKeyboardStateByte = I2C0_ReadByte(TCA6424_I2CADDR, TCA6424_INPUT_PORT0);
-		if (tempKeyboardStateByte != 0x0)
-			peripheralDeviceInput.keyPadStateByte = tempKeyboardStateByte;
 		peripheralDeviceInput.buttonStateByte = GPIOPinRead(GPIO_PORTJ_BASE, GPIO_PIN_1 | GPIO_PIN_0);
 	}
 }
@@ -2695,10 +2696,10 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(1500);
+	Delay(4000);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
-	Delay(500);
+	Delay(1000);
 }
 
 void S800_GPIO_Init(void)
@@ -2898,6 +2899,7 @@ void SysTick_Handler(void)
 	char *msg = peripheralDeviceInput.UARTMessage;
 
 	counter++;
+
 	//UART接受数据完整性验证:
 	if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown < 100)
 		peripheralDeviceInput.UARTMessageReceiveFinishedCountdown++;
@@ -2909,7 +2911,7 @@ void SysTick_Handler(void)
 	}
 
 	//Keypad及按钮状态.
-	if (counter % (SYSTICK_FREQUENCY * 20 / 1000) == 0) //20ms
+	if (counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //20ms
 	{
 		for (i = 0; i < 8; i++)
 		{
@@ -2940,7 +2942,6 @@ void SysTick_Handler(void)
 		timestampInUTC++;
 
 	getTimeFromTimestamp(&time, timestampInUTC, 8);
-
 	//倒计时控制.
 	if (mode.countdown == COUNTDOWN_MODE_FORWARD && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
 	{
@@ -3075,11 +3076,11 @@ void SysTick_Handler(void)
 		{
 			if (keypadPressed[5])
 			{
-				mode.time = CALENDER_MODE_SET;
+				mode.calender = CALENDER_MODE_SET;
 				calenderSelectedDigit = 7;
 			}
 			else if (keypadPressed[7])
-				mode.time = CALENDER_MODE_DISPLAY;
+				mode.calender = CALENDER_MODE_DISPLAY;
 			segmentDisplayCharacter[0] = convertNumberToChar(time.year % 10000 / 1000);
 			segmentDisplayCharacter[1] = convertNumberToChar(time.year % 1000 / 100);
 			segmentDisplayCharacter[2] = convertNumberToChar(time.year % 100 / 10);
@@ -3089,7 +3090,7 @@ void SysTick_Handler(void)
 			segmentDisplayCharacter[6] = convertNumberToChar((time.day + 1) % 100 / 10);
 			segmentDisplayCharacter[7] = convertNumberToChar((time.day + 1) % 10);
 
-			if (mode.time == CALENDER_MODE_SET)
+			if (mode.calender == CALENDER_MODE_SET)
 			{
 				if (keypadPressed[0])
 					do
@@ -3142,7 +3143,7 @@ void SysTick_Handler(void)
 					case 4:
 						break;
 					case 5:
-						timestampInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[time.month] : daysInMonth[time.month]) * 86400 * 100; //认为时间真正增加一月.
+						timestampInUTC -= (isLeapYear(time.year) ? daysInMonthInLeapYear[(time.month + 11) % 12] : daysInMonth[(time.month + 11) % 12]) * 86400 * 100;
 						break;
 					case 6:
 						timestampInUTC -= 10 * 86400 * 100;
@@ -3493,6 +3494,13 @@ uint8_t getSegmentDisplayControlWord(char character)
 }
 void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZone)
 {
+	// if (timestamp >= (uint64_t)142004160000)
+	// {
+	// 	timestamp = timestamp - (uint64_t)142004160000;
+	// 	time->year = 2015;
+	// }
+	// else
+	time->year = 1970;
 	time->second = timestamp / 100 % 60;
 	time->minute = timestamp / 100 % 3600 / 60;
 	time->hour = timestamp / 100 % 86400 / 3600 + timeZone;
@@ -3503,7 +3511,7 @@ void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZo
 		time->hour -= 24;
 		time->day++;
 	}
-	time->year = 1970;
+
 	time->month = 0;
 
 	while (time->day >= (isLeapYear(time->year) ? daysInLeapYear : daysInYear))
