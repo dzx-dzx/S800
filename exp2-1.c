@@ -65,8 +65,9 @@
 #define ALARM_MODE_DISPLAY 0
 #define ALARM_MODE_SET 1
 #define ALARM_MODE_RINGING 2
-
 #define NUMBER_OF_ALARMS 2
+
+#define SECONDS_IN_TROPICAL_YEAR 31556925
 
 void Delay(uint32_t value);
 void UARTStringPut(const char *cMessage);
@@ -114,30 +115,30 @@ const uint16_t daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const uint16_t daysInMonthInLeapYear[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const uint16_t daysInYear = 365;
 const uint16_t daysInLeapYear = 366;
-const uint64_t solarTermsIn2021[] = {160978820500,
-									 161105999000,
-									 161233552700,
-									 161361623600,
-									 161490562000,
-									 161620424700,
-									 161751450600,
-									 161883560200,
-									 162016843000,
-									 162151062600,
-									 162286152500,
-									 162421752900,
-									 162557672800,
-									 162693518400,
-									 162829043700,
-									 162963929600,
-									 163097957500,
-									 163230966300,
-									 163362834100,
-									 163493586900,
-									 163623232600,
-									 163751962300,
-									 163879902300,
-									 164007355800};
+const uint64_t solarTermsTimestampIn2021[] = {160978820500 + 8 * 3600 * 100,
+											  161105999000 + 8 * 3600 * 100,
+											  161233552700 + 8 * 3600 * 100,
+											  161361623600 + 8 * 3600 * 100,
+											  161490562000 + 8 * 3600 * 100,
+											  161620424700 + 8 * 3600 * 100,
+											  161751450600 + 8 * 3600 * 100,
+											  161883560200 + 8 * 3600 * 100,
+											  162016843000 + 8 * 3600 * 100,
+											  162151062600 + 8 * 3600 * 100,
+											  162286152500 + 8 * 3600 * 100,
+											  162421752900 + 8 * 3600 * 100,
+											  162557672800 + 8 * 3600 * 100,
+											  162693518400 + 8 * 3600 * 100,
+											  162829043700 + 8 * 3600 * 100,
+											  162963929600 + 8 * 3600 * 100,
+											  163097957500 + 8 * 3600 * 100,
+											  163230966300 + 8 * 3600 * 100,
+											  163362834100 + 8 * 3600 * 100,
+											  163493586900 + 8 * 3600 * 100,
+											  163623232600 + 8 * 3600 * 100,
+											  163751962300 + 8 * 3600 * 100,
+											  163879902300 + 8 * 3600 * 100,
+											  164007355800 + 8 * 3600 * 100};
 const uint16_t notes[][2] = {
 	{-2,
 	 2},
@@ -2597,6 +2598,7 @@ const uint16_t notes[][2] = {
 
 bool isLeapYear(uint16_t year);
 void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZone);
+void updateSolarTermsTimestamp(uint64_t solarTermsTimestamp[], uint16_t year);
 
 char convertNumberToChar(uint8_t number);
 uint8_t getSegmentDisplayControlWord(char character);
@@ -2691,15 +2693,16 @@ int main(void)
 
 		peripheralDeviceInput.buttonStateByte = GPIOPinRead(GPIO_PORTJ_BASE, GPIO_PIN_1 | GPIO_PIN_0);
 	}
+	uint8_t test;
 }
 void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(4000);
+	Delay(2000);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
-	Delay(1000);
+	Delay(0);
 }
 
 void S800_GPIO_Init(void)
@@ -2862,6 +2865,10 @@ void SysTick_Handler(void)
 	struct Time alarmTime[NUMBER_OF_ALARMS];
 	static uint64_t alarmTimestamp[NUMBER_OF_ALARMS];
 
+	static uint16_t solarTermsCorespondingYear;
+	static uint64_t solarTermsTimestamp[24];
+	static struct Time solarTerms[24];
+
 	static uint16_t bootCountdown;
 
 	static uint16_t noteTime = 0, noteIndex = 0;
@@ -2902,7 +2909,10 @@ void SysTick_Handler(void)
 
 	//UART接受数据完整性验证:
 	if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown < 100)
+	{
 		peripheralDeviceInput.UARTMessageReceiveFinishedCountdown++;
+		UARTMessageReceived = true;
+	}
 	else if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown == 100)
 	{
 		peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 1926;
@@ -2940,7 +2950,6 @@ void SysTick_Handler(void)
 	//时间控制.
 	if (mode.time == TIME_MODE_DISPLAY && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
 		timestampInUTC++;
-
 	getTimeFromTimestamp(&time, timestampInUTC, 8);
 	//倒计时控制.
 	if (mode.countdown == COUNTDOWN_MODE_FORWARD && counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //0.01s
@@ -2962,6 +2971,17 @@ void SysTick_Handler(void)
 	}
 	if (mode.alarm == ALARM_MODE_RINGING && keypadPressed[7])
 		mode.alarm = ALARM_MODE_DISPLAY;
+
+	//节气计算
+	if (solarTermsCorespondingYear != time.year)
+	{
+		solarTermsCorespondingYear = time.year;
+		updateSolarTermsTimestamp(solarTermsTimestamp, solarTermsCorespondingYear);
+		for (i = 0; i < 24; i++)
+		{
+			getTimeFromTimestamp(&solarTerms[i], solarTermsTimestamp[i], 8);
+		}
+	}
 
 	//主模式切换.
 	if (buttonPressed[0])
@@ -2996,7 +3016,7 @@ void SysTick_Handler(void)
 		{
 		case MASTER_MODE_TIME:
 		{
-
+			peripheralDeviceOutput.LEDDisplayByte = 1 << MASTER_MODE_TIME;
 			if (keypadPressed[5])
 			{
 				mode.time = TIME_MODE_SET;
@@ -3074,6 +3094,7 @@ void SysTick_Handler(void)
 		break;
 		case MASTER_MODE_CALENDER:
 		{
+			peripheralDeviceOutput.LEDDisplayByte = 1 << MASTER_MODE_CALENDER;
 			if (keypadPressed[5])
 			{
 				mode.calender = CALENDER_MODE_SET;
@@ -3161,19 +3182,27 @@ void SysTick_Handler(void)
 		break;
 		case MASTER_MODE_SOLAR_TERMS:
 		{
-			segmentDisplayCharacter[0] = 'A';
-			segmentDisplayCharacter[1] = 'B';
-			segmentDisplayCharacter[2] = 'C';
-			segmentDisplayCharacter[3] = 'D';
-			segmentDisplayCharacter[4] = 'E';
-			segmentDisplayCharacter[5] = 'F';
-			segmentDisplayCharacter[6] = 'G';
-			segmentDisplayCharacter[7] = 'H';
+			peripheralDeviceOutput.LEDDisplayByte = 1 << MASTER_MODE_SOLAR_TERMS;
+			segmentDisplayCharacter[0] = convertNumberToChar(time.year % 10000 / 1000);
+			segmentDisplayCharacter[1] = convertNumberToChar(time.year % 1000 / 100);
+			segmentDisplayCharacter[2] = convertNumberToChar(time.year % 100 / 10);
+			segmentDisplayCharacter[3] = convertNumberToChar(time.year % 10);
+			for (i = 0; i < 24; i++)
+			{
+				if (solarTerms[i].month == time.month && solarTerms[i].day == time.day)
+				{
+					segmentDisplayCharacter[4] = 'S';
+					segmentDisplayCharacter[5] = 'P';
+					segmentDisplayCharacter[6] = convertNumberToChar(((i + 24 - 2) % 24 + 1) / 10);
+					segmentDisplayCharacter[7] = convertNumberToChar(((i + 24 - 2) % 24 + 1) % 10);
+					break;
+				}
+			}
 		}
 		break;
 		case MASTER_MODE_COUNTDOWN:
 		{
-
+			peripheralDeviceOutput.LEDDisplayByte = 1 << MASTER_MODE_COUNTDOWN;
 			if (keypadPressed[5])
 				mode.countdown = (mode.countdown == COUNTDOWN_MODE_SET) ? COUNTDOWN_MODE_PAUSE : COUNTDOWN_MODE_SET;
 			else if (keypadPressed[7])
@@ -3256,6 +3285,7 @@ void SysTick_Handler(void)
 		break;
 		case MASTER_MODE_ALARM:
 		{
+			peripheralDeviceOutput.LEDDisplayByte = 1 << MASTER_MODE_ALARM;
 			if (keypadPressed[4])
 				alarmOrdinalNumber = (alarmOrdinalNumber + 1) % NUMBER_OF_ALARMS;
 			if (keypadPressed[3])
@@ -3525,7 +3555,34 @@ void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZo
 		time->month++;
 	}
 }
-
+void updateSolarTermsTimestamp(uint64_t solarTermsTimestamp[], uint16_t year)
+{
+	uint16_t i;
+	for (i = 0; i < 24; i++)
+	{
+		solarTermsTimestamp[i] = solarTermsTimestampIn2021[i];
+	}
+	if (year < 2021)
+	{
+		while ((year++) != 2021)
+		{
+			for (i = 0; i < 24; i++)
+			{
+				solarTermsTimestamp[i] -= SECONDS_IN_TROPICAL_YEAR * 100;
+			}
+		}
+	}
+	else if (year > 2021)
+	{
+		while ((year--) != 2021)
+		{
+			for (i = 0; i < 24; i++)
+			{
+				solarTermsTimestamp[i] += SECONDS_IN_TROPICAL_YEAR * 100;
+			}
+		}
+	}
+}
 void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_t blinkDigitByte)
 {
 	uint8_t i;
