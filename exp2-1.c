@@ -69,6 +69,7 @@
 #define NUMBER_OF_ALARMS 2
 
 #define SECONDS_IN_TROPICAL_YEAR 31556925
+#define NUMBERS_OF_LIGHT_LEVELS 5 //0 for off and NUMBERS_OF_LIGHT_LEVELS-1 for full.
 
 void Delay(uint32_t value);
 void UARTStringPut(const char *cMessage);
@@ -100,6 +101,7 @@ struct PeripheralDeviceOutput
 	uint8_t segmentDisplayControlWord[8];
 	uint8_t LEDDisplayByte;
 	uint32_t beepFrequency; //Set to 0 to turn off.
+	uint8_t lightLevel;
 
 } peripheralDeviceOutput;
 
@@ -2656,6 +2658,7 @@ int main(void)
 	peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 1926;
 	peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
 	peripheralDeviceOutput.beepFrequency = 0;
+	peripheralDeviceOutput.lightLevel = NUMBERS_OF_LIGHT_LEVELS - 1;
 
 	S800_GPIO_Init();
 	S800_I2C0_Init();
@@ -2681,7 +2684,9 @@ int main(void)
 			tempKeyboardStateByte = I2C0_ReadByte(TCA6424_I2CADDR, TCA6424_INPUT_PORT0);
 			if (tempKeyboardStateByte != 0x0)
 				peripheralDeviceInput.keyPadStateByte = tempKeyboardStateByte;
-			flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
+
+			if (peripheralDeviceOutput.lightLevel > 0)
+				flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
 		}
 
 		PWMOutputState(PWM0_BASE, (PWM_OUT_7_BIT), peripheralDeviceOutput.beepFrequency != 0);
@@ -2700,10 +2705,10 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay(2000);
+	Delay((uint32_t)500 * peripheralDeviceOutput.lightLevel);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
-	Delay(0);
+	Delay((uint32_t)500 * (NUMBERS_OF_LIGHT_LEVELS - 1 - peripheralDeviceOutput.lightLevel));
 }
 
 void S800_GPIO_Init(void)
@@ -2989,7 +2994,11 @@ void SysTick_Handler(void)
 	if (buttonPressed[1])
 		mode.master = (mode.master + 1) % NUMBER_OF_MASTER_MODES;
 
-	//
+	if (buttonHold[0])
+		peripheralDeviceOutput.lightLevel = (peripheralDeviceOutput.lightLevel + NUMBERS_OF_LIGHT_LEVELS - 1) % NUMBERS_OF_LIGHT_LEVELS;
+	if (buttonHold[1])
+		peripheralDeviceOutput.lightLevel = (peripheralDeviceOutput.lightLevel + 1) % NUMBERS_OF_LIGHT_LEVELS;
+	//输入输出
 	if (bootCountdown > 0)
 	{
 		segmentDisplayCharacter[0] = convertNumberToChar(2);
