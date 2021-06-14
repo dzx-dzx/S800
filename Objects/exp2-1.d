@@ -1,6 +1,7 @@
 .\objects\exp2-1.o: exp2-1.c
 .\objects\exp2-1.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\exp2-1.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\exp2-1.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\exp2-1.o: .\inc\hw_memmap.h
 .\objects\exp2-1.o: .\driverlib\debug.h
 .\objects\exp2-1.o: .\driverlib\gpio.h

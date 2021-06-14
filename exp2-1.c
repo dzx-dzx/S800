@@ -1,6 +1,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "hw_memmap.h"
 #include "debug.h"
 #include "gpio.h"
@@ -2911,7 +2912,6 @@ void SysTick_Handler(void)
 	if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown < 100)
 	{
 		peripheralDeviceInput.UARTMessageReceiveFinishedCountdown++;
-		UARTMessageReceived = true;
 	}
 	else if (peripheralDeviceInput.UARTMessageReceiveFinishedCountdown == 100)
 	{
@@ -3420,9 +3420,23 @@ void SysTick_Handler(void)
 
 	if (UARTMessageReceived)
 	{
-		if (strncmp(msg, "set", 3))
+		if (strncasecmp(msg, "set", strlen("set")) == 0)
 		{
-			;
+			if (strncasecmp(msg + strlen("set") + 1, "timestamp", strlen("timestamp")) == 0)
+			{
+				uint8_t positionInMessage = strlen("set") + 1;
+				uint64_t timestampFromMessage = strlen("set") + 1 + strlen("timestamp") + 1;
+				while (msg[positionInMessage] != '\0')
+				{
+					timestampFromMessage = timestampFromMessage * 10 + (uint64_t)(msg[positionInMessage++] - '0');
+				}
+
+				char tmp[100];
+				sprintf(tmp, "Updating current timestamp to:%llu(times ten milliseconds)", timestampFromMessage);
+				UARTStringPut(tmp);
+
+				timestampInUTC = timestampFromMessage;
+			}
 		}
 	}
 }
@@ -3568,7 +3582,7 @@ void updateSolarTermsTimestamp(uint64_t solarTermsTimestamp[], uint16_t year)
 		{
 			for (i = 0; i < 24; i++)
 			{
-				solarTermsTimestamp[i] -= SECONDS_IN_TROPICAL_YEAR * 100;
+				solarTermsTimestamp[i] = solarTermsTimestamp[i] - (uint64_t)SECONDS_IN_TROPICAL_YEAR * 100;
 			}
 		}
 	}
@@ -3578,7 +3592,7 @@ void updateSolarTermsTimestamp(uint64_t solarTermsTimestamp[], uint16_t year)
 		{
 			for (i = 0; i < 24; i++)
 			{
-				solarTermsTimestamp[i] += SECONDS_IN_TROPICAL_YEAR * 100;
+				solarTermsTimestamp[i] = solarTermsTimestamp[i] + (uint64_t)SECONDS_IN_TROPICAL_YEAR * 100;
 			}
 		}
 	}
