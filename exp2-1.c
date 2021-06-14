@@ -3424,11 +3424,11 @@ void SysTick_Handler(void)
 		{
 			if (strncasecmp(msg + strlen("set") + 1, "timestamp", strlen("timestamp")) == 0)
 			{
-				uint8_t positionInMessage = strlen("set") + 1;
-				uint64_t timestampFromMessage = strlen("set") + 1 + strlen("timestamp") + 1;
+				uint16_t positionInMessage = strlen("set timestamp ");
+				uint64_t timestampFromMessage = 0;
 				while (msg[positionInMessage] != '\0')
 				{
-					timestampFromMessage = timestampFromMessage * 10 + (uint64_t)(msg[positionInMessage++] - '0');
+					timestampFromMessage = timestampFromMessage * (uint64_t)10 + (uint64_t)(msg[positionInMessage++] - '0');
 				}
 
 				char tmp[100];

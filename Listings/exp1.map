@@ -915,48 +915,48 @@ Image Symbol Table
     i.SysTickIntEnable                       0x00001702   Section        0  systick.o(i.SysTickIntEnable)
     i.SysTickPeriodSet                       0x00001710   Section        0  systick.o(i.SysTickPeriodSet)
     i.SysTick_Handler                        0x0000171c   Section        0  exp2-1.o(i.SysTick_Handler)
-    i.SystemInit                             0x00002c1c   Section        0  system_tm4c129.o(i.SystemInit)
-    i.UART0_Handler                          0x00002c3c   Section        0  exp2-1.o(i.UART0_Handler)
-    i.UARTCharGetNonBlocking                 0x00002c88   Section        0  uart.o(i.UARTCharGetNonBlocking)
-    i.UARTCharPut                            0x00002c98   Section        0  uart.o(i.UARTCharPut)
-    i.UARTCharsAvail                         0x00002ca4   Section        0  uart.o(i.UARTCharsAvail)
-    i.UARTConfigSetExpClk                    0x00002cae   Section        0  uart.o(i.UARTConfigSetExpClk)
-    i.UARTIntClear                           0x00002d1c   Section        0  uart.o(i.UARTIntClear)
-    i.UARTIntEnable                          0x00002d20   Section        0  uart.o(i.UARTIntEnable)
-    i.UARTIntStatus                          0x00002d28   Section        0  uart.o(i.UARTIntStatus)
-    i.UARTStringPut                          0x00002d34   Section        0  exp2-1.o(i.UARTStringPut)
-    i.convertNumberToChar                    0x00002d50   Section        0  exp2-1.o(i.convertNumberToChar)
-    i.flash_seg                              0x00002d6a   Section        0  exp2-1.o(i.flash_seg)
-    i.getSegmentDisplayControlWord           0x00002da4   Section        0  exp2-1.o(i.getSegmentDisplayControlWord)
-    i.getTimeFromTimestamp                   0x00002e34   Section        0  exp2-1.o(i.getTimeFromTimestamp)
-    i.isLeapYear                             0x00002f78   Section        0  exp2-1.o(i.isLeapYear)
-    i.main                                   0x00002fac   Section        0  exp2-1.o(i.main)
-    i.segmentDisplayBlink                    0x000030b4   Section        0  exp2-1.o(i.segmentDisplayBlink)
-    i.updateSolarTermsTimestamp              0x000030f8   Section        0  exp2-1.o(i.updateSolarTermsTimestamp)
-    locale$$code                             0x000031a0   Section       44  lc_ctype_c.o(locale$$code)
-    x$fpl$fpinit                             0x000031cc   Section       10  fpinit.o(x$fpl$fpinit)
-    $v0                                      0x000031cc   Number         0  fpinit.o(x$fpl$fpinit)
-    .constdata                               0x000031d8   Section     5228  exp2-1.o(.constdata)
-    .constdata                               0x00004644   Section      552  gpio.o(.constdata)
-    g_ppui32GPIOIntMapBlizzard               0x00004644   Data         192  gpio.o(.constdata)
-    g_ppui32GPIOIntMapSnowflake              0x00004704   Data         216  gpio.o(.constdata)
-    g_pui32GPIOBaseAddrs                     0x000047dc   Data         144  gpio.o(.constdata)
-    .constdata                               0x0000486c   Section      268  interrupt.o(.constdata)
-    g_pui32Priority                          0x0000486c   Data          32  interrupt.o(.constdata)
-    g_pui32Regs                              0x0000488c   Data         156  interrupt.o(.constdata)
-    g_pui32EnRegs                            0x00004928   Data          20  interrupt.o(.constdata)
-    g_pui32Dii16Regs                         0x0000493c   Data          20  interrupt.o(.constdata)
-    g_pui32PendRegs                          0x00004950   Data          20  interrupt.o(.constdata)
-    g_pui32UnpendRegs                        0x00004964   Data          20  interrupt.o(.constdata)
-    .constdata                               0x00004978   Section      596  sysctl.o(.constdata)
-    g_pui32VCOFrequencies                    0x00004978   Data           8  sysctl.o(.constdata)
-    g_pui32Xtals                             0x00004980   Data         108  sysctl.o(.constdata)
-    g_pppui32XTALtoVCO                       0x000049ec   Data         432  sysctl.o(.constdata)
-    g_sXTALtoMEMTIM                          0x00004b9c   Data          48  sysctl.o(.constdata)
-    locale$$data                             0x00004bec   Section      272  lc_ctype_c.o(locale$$data)
-    __lcctype_c_name                         0x00004bf0   Data           2  lc_ctype_c.o(locale$$data)
-    __lcctype_c_start                        0x00004bf8   Data           0  lc_ctype_c.o(locale$$data)
-    __lcctype_c_end                          0x00004cfc   Data           0  lc_ctype_c.o(locale$$data)
+    i.SystemInit                             0x00002c28   Section        0  system_tm4c129.o(i.SystemInit)
+    i.UART0_Handler                          0x00002c48   Section        0  exp2-1.o(i.UART0_Handler)
+    i.UARTCharGetNonBlocking                 0x00002c94   Section        0  uart.o(i.UARTCharGetNonBlocking)
+    i.UARTCharPut                            0x00002ca4   Section        0  uart.o(i.UARTCharPut)
+    i.UARTCharsAvail                         0x00002cb0   Section        0  uart.o(i.UARTCharsAvail)
+    i.UARTConfigSetExpClk                    0x00002cba   Section        0  uart.o(i.UARTConfigSetExpClk)
+    i.UARTIntClear                           0x00002d28   Section        0  uart.o(i.UARTIntClear)
+    i.UARTIntEnable                          0x00002d2c   Section        0  uart.o(i.UARTIntEnable)
+    i.UARTIntStatus                          0x00002d34   Section        0  uart.o(i.UARTIntStatus)
+    i.UARTStringPut                          0x00002d40   Section        0  exp2-1.o(i.UARTStringPut)
+    i.convertNumberToChar                    0x00002d5c   Section        0  exp2-1.o(i.convertNumberToChar)
+    i.flash_seg                              0x00002d76   Section        0  exp2-1.o(i.flash_seg)
+    i.getSegmentDisplayControlWord           0x00002db0   Section        0  exp2-1.o(i.getSegmentDisplayControlWord)
+    i.getTimeFromTimestamp                   0x00002e40   Section        0  exp2-1.o(i.getTimeFromTimestamp)
+    i.isLeapYear                             0x00002f84   Section        0  exp2-1.o(i.isLeapYear)
+    i.main                                   0x00002fb8   Section        0  exp2-1.o(i.main)
+    i.segmentDisplayBlink                    0x000030c0   Section        0  exp2-1.o(i.segmentDisplayBlink)
+    i.updateSolarTermsTimestamp              0x00003104   Section        0  exp2-1.o(i.updateSolarTermsTimestamp)
+    locale$$code                             0x000031ac   Section       44  lc_ctype_c.o(locale$$code)
+    x$fpl$fpinit                             0x000031d8   Section       10  fpinit.o(x$fpl$fpinit)
+    $v0                                      0x000031d8   Number         0  fpinit.o(x$fpl$fpinit)
+    .constdata                               0x000031e8   Section     5228  exp2-1.o(.constdata)
+    .constdata                               0x00004654   Section      552  gpio.o(.constdata)
+    g_ppui32GPIOIntMapBlizzard               0x00004654   Data         192  gpio.o(.constdata)
+    g_ppui32GPIOIntMapSnowflake              0x00004714   Data         216  gpio.o(.constdata)
+    g_pui32GPIOBaseAddrs                     0x000047ec   Data         144  gpio.o(.constdata)
+    .constdata                               0x0000487c   Section      268  interrupt.o(.constdata)
+    g_pui32Priority                          0x0000487c   Data          32  interrupt.o(.constdata)
+    g_pui32Regs                              0x0000489c   Data         156  interrupt.o(.constdata)
+    g_pui32EnRegs                            0x00004938   Data          20  interrupt.o(.constdata)
+    g_pui32Dii16Regs                         0x0000494c   Data          20  interrupt.o(.constdata)
+    g_pui32PendRegs                          0x00004960   Data          20  interrupt.o(.constdata)
+    g_pui32UnpendRegs                        0x00004974   Data          20  interrupt.o(.constdata)
+    .constdata                               0x00004988   Section      596  sysctl.o(.constdata)
+    g_pui32VCOFrequencies                    0x00004988   Data           8  sysctl.o(.constdata)
+    g_pui32Xtals                             0x00004990   Data         108  sysctl.o(.constdata)
+    g_pppui32XTALtoVCO                       0x000049fc   Data         432  sysctl.o(.constdata)
+    g_sXTALtoMEMTIM                          0x00004bac   Data          48  sysctl.o(.constdata)
+    locale$$data                             0x00004bfc   Section      272  lc_ctype_c.o(locale$$data)
+    __lcctype_c_name                         0x00004c00   Data           2  lc_ctype_c.o(locale$$data)
+    __lcctype_c_start                        0x00004c08   Data           0  lc_ctype_c.o(locale$$data)
+    __lcctype_c_end                          0x00004d0c   Data           0  lc_ctype_c.o(locale$$data)
     .data                                    0x20000000   Section       60  exp2-1.o(.data)
     counter                                  0x20000008   Data           8  exp2-1.o(.data)
     timestampInUTC                           0x20000010   Data           8  exp2-1.o(.data)
@@ -1299,39 +1299,39 @@ Image Symbol Table
     SysTickEnable                            0x000016f5   Thumb Code    14  systick.o(i.SysTickEnable)
     SysTickIntEnable                         0x00001703   Thumb Code    14  systick.o(i.SysTickIntEnable)
     SysTickPeriodSet                         0x00001711   Thumb Code    10  systick.o(i.SysTickPeriodSet)
-    SysTick_Handler                          0x0000171d   Thumb Code  5238  exp2-1.o(i.SysTick_Handler)
-    SystemInit                               0x00002c1d   Thumb Code    20  system_tm4c129.o(i.SystemInit)
-    UART0_Handler                            0x00002c3d   Thumb Code    68  exp2-1.o(i.UART0_Handler)
-    UARTCharGetNonBlocking                   0x00002c89   Thumb Code    16  uart.o(i.UARTCharGetNonBlocking)
-    UARTCharPut                              0x00002c99   Thumb Code    12  uart.o(i.UARTCharPut)
-    UARTCharsAvail                           0x00002ca5   Thumb Code    10  uart.o(i.UARTCharsAvail)
-    UARTConfigSetExpClk                      0x00002caf   Thumb Code   110  uart.o(i.UARTConfigSetExpClk)
-    UARTIntClear                             0x00002d1d   Thumb Code     4  uart.o(i.UARTIntClear)
-    UARTIntEnable                            0x00002d21   Thumb Code     8  uart.o(i.UARTIntEnable)
-    UARTIntStatus                            0x00002d29   Thumb Code    10  uart.o(i.UARTIntStatus)
-    UARTStringPut                            0x00002d35   Thumb Code    24  exp2-1.o(i.UARTStringPut)
-    convertNumberToChar                      0x00002d51   Thumb Code    26  exp2-1.o(i.convertNumberToChar)
-    flash_seg                                0x00002d6b   Thumb Code    56  exp2-1.o(i.flash_seg)
-    getSegmentDisplayControlWord             0x00002da5   Thumb Code    54  exp2-1.o(i.getSegmentDisplayControlWord)
-    getTimeFromTimestamp                     0x00002e35   Thumb Code   310  exp2-1.o(i.getTimeFromTimestamp)
-    isLeapYear                               0x00002f79   Thumb Code    52  exp2-1.o(i.isLeapYear)
-    main                                     0x00002fad   Thumb Code   236  exp2-1.o(i.main)
-    segmentDisplayBlink                      0x000030b5   Thumb Code    66  exp2-1.o(i.segmentDisplayBlink)
-    updateSolarTermsTimestamp                0x000030f9   Thumb Code   158  exp2-1.o(i.updateSolarTermsTimestamp)
-    _get_lc_ctype                            0x000031a1   Thumb Code    44  lc_ctype_c.o(locale$$code)
-    _fp_init                                 0x000031cd   Thumb Code    10  fpinit.o(x$fpl$fpinit)
-    __fplib_config_fpu_vfp                   0x000031d5   Thumb Code     0  fpinit.o(x$fpl$fpinit)
-    __fplib_config_pureend_doubles           0x000031d5   Thumb Code     0  fpinit.o(x$fpl$fpinit)
-    daysInMonth                              0x000031d8   Data          24  exp2-1.o(.constdata)
-    daysInMonthInLeapYear                    0x000031f0   Data          24  exp2-1.o(.constdata)
-    daysInYear                               0x00003208   Data           2  exp2-1.o(.constdata)
-    daysInLeapYear                           0x0000320a   Data           2  exp2-1.o(.constdata)
-    solarTermsTimestampIn2021                0x00003210   Data         192  exp2-1.o(.constdata)
-    notes                                    0x000032d0   Data        4908  exp2-1.o(.constdata)
-    noteFrequency                            0x000045fc   Data          72  exp2-1.o(.constdata)
-    Region$$Table$$Base                      0x00004bcc   Number         0  anon$$obj.o(Region$$Table)
-    Region$$Table$$Limit                     0x00004bec   Number         0  anon$$obj.o(Region$$Table)
-    __ctype                                  0x00004bf9   Data           0  lc_ctype_c.o(locale$$data)
+    SysTick_Handler                          0x0000171d   Thumb Code  5322  exp2-1.o(i.SysTick_Handler)
+    SystemInit                               0x00002c29   Thumb Code    20  system_tm4c129.o(i.SystemInit)
+    UART0_Handler                            0x00002c49   Thumb Code    68  exp2-1.o(i.UART0_Handler)
+    UARTCharGetNonBlocking                   0x00002c95   Thumb Code    16  uart.o(i.UARTCharGetNonBlocking)
+    UARTCharPut                              0x00002ca5   Thumb Code    12  uart.o(i.UARTCharPut)
+    UARTCharsAvail                           0x00002cb1   Thumb Code    10  uart.o(i.UARTCharsAvail)
+    UARTConfigSetExpClk                      0x00002cbb   Thumb Code   110  uart.o(i.UARTConfigSetExpClk)
+    UARTIntClear                             0x00002d29   Thumb Code     4  uart.o(i.UARTIntClear)
+    UARTIntEnable                            0x00002d2d   Thumb Code     8  uart.o(i.UARTIntEnable)
+    UARTIntStatus                            0x00002d35   Thumb Code    10  uart.o(i.UARTIntStatus)
+    UARTStringPut                            0x00002d41   Thumb Code    24  exp2-1.o(i.UARTStringPut)
+    convertNumberToChar                      0x00002d5d   Thumb Code    26  exp2-1.o(i.convertNumberToChar)
+    flash_seg                                0x00002d77   Thumb Code    56  exp2-1.o(i.flash_seg)
+    getSegmentDisplayControlWord             0x00002db1   Thumb Code    54  exp2-1.o(i.getSegmentDisplayControlWord)
+    getTimeFromTimestamp                     0x00002e41   Thumb Code   310  exp2-1.o(i.getTimeFromTimestamp)
+    isLeapYear                               0x00002f85   Thumb Code    52  exp2-1.o(i.isLeapYear)
+    main                                     0x00002fb9   Thumb Code   236  exp2-1.o(i.main)
+    segmentDisplayBlink                      0x000030c1   Thumb Code    66  exp2-1.o(i.segmentDisplayBlink)
+    updateSolarTermsTimestamp                0x00003105   Thumb Code   158  exp2-1.o(i.updateSolarTermsTimestamp)
+    _get_lc_ctype                            0x000031ad   Thumb Code    44  lc_ctype_c.o(locale$$code)
+    _fp_init                                 0x000031d9   Thumb Code    10  fpinit.o(x$fpl$fpinit)
+    __fplib_config_fpu_vfp                   0x000031e1   Thumb Code     0  fpinit.o(x$fpl$fpinit)
+    __fplib_config_pureend_doubles           0x000031e1   Thumb Code     0  fpinit.o(x$fpl$fpinit)
+    daysInMonth                              0x000031e8   Data          24  exp2-1.o(.constdata)
+    daysInMonthInLeapYear                    0x00003200   Data          24  exp2-1.o(.constdata)
+    daysInYear                               0x00003218   Data           2  exp2-1.o(.constdata)
+    daysInLeapYear                           0x0000321a   Data           2  exp2-1.o(.constdata)
+    solarTermsTimestampIn2021                0x00003220   Data         192  exp2-1.o(.constdata)
+    notes                                    0x000032e0   Data        4908  exp2-1.o(.constdata)
+    noteFrequency                            0x0000460c   Data          72  exp2-1.o(.constdata)
+    Region$$Table$$Base                      0x00004bdc   Number         0  anon$$obj.o(Region$$Table)
+    Region$$Table$$Limit                     0x00004bfc   Number         0  anon$$obj.o(Region$$Table)
+    __ctype                                  0x00004c09   Data           0  lc_ctype_c.o(locale$$data)
     ui32SysClock                             0x20000000   Data           4  exp2-1.o(.data)
     SystemCoreClock                          0x2000003c   Data           4  system_tm4c129.o(.data)
     peripheralDeviceInput                    0x20000040   Data         112  exp2-1.o(.bss)
@@ -1347,9 +1347,9 @@ Memory Map of the image
 
   Image Entry point : 0x00000201
 
-  Load Region LR_IROM1 (Base: 0x00000000, Size: 0x00004d3c, Max: 0x00100000, ABSOLUTE)
+  Load Region LR_IROM1 (Base: 0x00000000, Size: 0x00004d4c, Max: 0x00100000, ABSOLUTE)
 
-    Execution Region ER_IROM1 (Base: 0x00000000, Size: 0x00004cfc, Max: 0x00100000, ABSOLUTE)
+    Execution Region ER_IROM1 (Base: 0x00000000, Size: 0x00004d0c, Max: 0x00100000, ABSOLUTE)
 
     Base Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -1492,37 +1492,37 @@ Memory Map of the image
     0x00001702   0x0000000e   Code   RO         1878    i.SysTickIntEnable  driverlib.lib(systick.o)
     0x00001710   0x0000000a   Code   RO         1882    i.SysTickPeriodSet  driverlib.lib(systick.o)
     0x0000171a   0x00000002   PAD
-    0x0000171c   0x00001500   Code   RO           10    i.SysTick_Handler   exp2-1.o
-    0x00002c1c   0x00000020   Code   RO          210    i.SystemInit        system_tm4c129.o
-    0x00002c3c   0x0000004c   Code   RO           11    i.UART0_Handler     exp2-1.o
-    0x00002c88   0x00000010   Code   RO         1945    i.UARTCharGetNonBlocking  driverlib.lib(uart.o)
-    0x00002c98   0x0000000c   Code   RO         1946    i.UARTCharPut       driverlib.lib(uart.o)
-    0x00002ca4   0x0000000a   Code   RO         1948    i.UARTCharsAvail    driverlib.lib(uart.o)
-    0x00002cae   0x0000006e   Code   RO         1952    i.UARTConfigSetExpClk  driverlib.lib(uart.o)
-    0x00002d1c   0x00000004   Code   RO         1965    i.UARTIntClear      driverlib.lib(uart.o)
-    0x00002d20   0x00000008   Code   RO         1967    i.UARTIntEnable     driverlib.lib(uart.o)
-    0x00002d28   0x0000000a   Code   RO         1969    i.UARTIntStatus     driverlib.lib(uart.o)
-    0x00002d32   0x00000002   PAD
-    0x00002d34   0x0000001c   Code   RO           12    i.UARTStringPut     exp2-1.o
-    0x00002d50   0x0000001a   Code   RO           14    i.convertNumberToChar  exp2-1.o
-    0x00002d6a   0x00000038   Code   RO           15    i.flash_seg         exp2-1.o
-    0x00002da2   0x00000002   PAD
-    0x00002da4   0x00000090   Code   RO           16    i.getSegmentDisplayControlWord  exp2-1.o
-    0x00002e34   0x00000144   Code   RO           17    i.getTimeFromTimestamp  exp2-1.o
-    0x00002f78   0x00000034   Code   RO           18    i.isLeapYear        exp2-1.o
-    0x00002fac   0x00000108   Code   RO           19    i.main              exp2-1.o
-    0x000030b4   0x00000042   Code   RO           20    i.segmentDisplayBlink  exp2-1.o
-    0x000030f6   0x00000002   PAD
-    0x000030f8   0x000000a8   Code   RO           21    i.updateSolarTermsTimestamp  exp2-1.o
-    0x000031a0   0x0000002c   Code   RO         2333    locale$$code        c_w.l(lc_ctype_c.o)
-    0x000031cc   0x0000000a   Code   RO         2420    x$fpl$fpinit        fz_wm.l(fpinit.o)
-    0x000031d6   0x00000002   PAD
-    0x000031d8   0x0000146c   Data   RO           23    .constdata          exp2-1.o
-    0x00004644   0x00000228   Data   RO          454    .constdata          driverlib.lib(gpio.o)
-    0x0000486c   0x0000010c   Data   RO         1069    .constdata          driverlib.lib(interrupt.o)
-    0x00004978   0x00000254   Data   RO         1589    .constdata          driverlib.lib(sysctl.o)
-    0x00004bcc   0x00000020   Data   RO         2476    Region$$Table       anon$$obj.o
-    0x00004bec   0x00000110   Data   RO         2332    locale$$data        c_w.l(lc_ctype_c.o)
+    0x0000171c   0x0000150c   Code   RO           10    i.SysTick_Handler   exp2-1.o
+    0x00002c28   0x00000020   Code   RO          210    i.SystemInit        system_tm4c129.o
+    0x00002c48   0x0000004c   Code   RO           11    i.UART0_Handler     exp2-1.o
+    0x00002c94   0x00000010   Code   RO         1945    i.UARTCharGetNonBlocking  driverlib.lib(uart.o)
+    0x00002ca4   0x0000000c   Code   RO         1946    i.UARTCharPut       driverlib.lib(uart.o)
+    0x00002cb0   0x0000000a   Code   RO         1948    i.UARTCharsAvail    driverlib.lib(uart.o)
+    0x00002cba   0x0000006e   Code   RO         1952    i.UARTConfigSetExpClk  driverlib.lib(uart.o)
+    0x00002d28   0x00000004   Code   RO         1965    i.UARTIntClear      driverlib.lib(uart.o)
+    0x00002d2c   0x00000008   Code   RO         1967    i.UARTIntEnable     driverlib.lib(uart.o)
+    0x00002d34   0x0000000a   Code   RO         1969    i.UARTIntStatus     driverlib.lib(uart.o)
+    0x00002d3e   0x00000002   PAD
+    0x00002d40   0x0000001c   Code   RO           12    i.UARTStringPut     exp2-1.o
+    0x00002d5c   0x0000001a   Code   RO           14    i.convertNumberToChar  exp2-1.o
+    0x00002d76   0x00000038   Code   RO           15    i.flash_seg         exp2-1.o
+    0x00002dae   0x00000002   PAD
+    0x00002db0   0x00000090   Code   RO           16    i.getSegmentDisplayControlWord  exp2-1.o
+    0x00002e40   0x00000144   Code   RO           17    i.getTimeFromTimestamp  exp2-1.o
+    0x00002f84   0x00000034   Code   RO           18    i.isLeapYear        exp2-1.o
+    0x00002fb8   0x00000108   Code   RO           19    i.main              exp2-1.o
+    0x000030c0   0x00000042   Code   RO           20    i.segmentDisplayBlink  exp2-1.o
+    0x00003102   0x00000002   PAD
+    0x00003104   0x000000a8   Code   RO           21    i.updateSolarTermsTimestamp  exp2-1.o
+    0x000031ac   0x0000002c   Code   RO         2333    locale$$code        c_w.l(lc_ctype_c.o)
+    0x000031d8   0x0000000a   Code   RO         2420    x$fpl$fpinit        fz_wm.l(fpinit.o)
+    0x000031e2   0x00000006   PAD
+    0x000031e8   0x0000146c   Data   RO           23    .constdata          exp2-1.o
+    0x00004654   0x00000228   Data   RO          454    .constdata          driverlib.lib(gpio.o)
+    0x0000487c   0x0000010c   Data   RO         1069    .constdata          driverlib.lib(interrupt.o)
+    0x00004988   0x00000254   Data   RO         1589    .constdata          driverlib.lib(sysctl.o)
+    0x00004bdc   0x00000020   Data   RO         2476    Region$$Table       anon$$obj.o
+    0x00004bfc   0x00000110   Data   RO         2332    locale$$data        c_w.l(lc_ctype_c.o)
 
 
     Execution Region RW_IRAM1 (Base: 0x20000000, Size: 0x00000510, Max: 0x00040000, ABSOLUTE)
@@ -1544,12 +1544,12 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-      7512        686       5228         60        624      21374   exp2-1.o
+      7524        690       5228         60        624      21394   exp2-1.o
        300         22        512          0        512       6020   startup_tm4c129.o
         32         12          0          4          0        679   system_tm4c129.o
 
     ----------------------------------------------------------------------
-      7850        720       5772         64       1136      28073   Object Totals
+      7862        724       5772         64       1136      28093   Object Totals
          0          0         32          0          0          0   (incl. Generated)
          6          0          0          0          0          0   (incl. Padding)
 
@@ -1610,8 +1610,8 @@ Image component sizes
         10          0          0          0          0        116   fpinit.o
 
     ----------------------------------------------------------------------
-      4398        192       1688          0         96      39444   Library Totals
-        24          0          0          0          0          0   (incl. Padding)
+      4402        192       1688          0         96      39444   Library Totals
+        28          0          0          0          0          0   (incl. Padding)
 
     ----------------------------------------------------------------------
 
@@ -1622,7 +1622,7 @@ Image component sizes
         10          0          0          0          0        116   fz_wm.l
 
     ----------------------------------------------------------------------
-      4398        192       1688          0         96      39444   Library Totals
+      4402        192       1688          0         96      39444   Library Totals
 
     ----------------------------------------------------------------------
 
@@ -1631,15 +1631,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-     12248        912       7460         64       1232      60129   Grand Totals
-     12248        912       7460         64       1232      60129   ELF Image Totals
-     12248        912       7460         64          0          0   ROM Totals
+     12264        916       7460         64       1232      60149   Grand Totals
+     12264        916       7460         64       1232      60149   ELF Image Totals
+     12264        916       7460         64          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)                19708 (  19.25kB)
+    Total RO  Size (Code + RO Data)                19724 (  19.26kB)
     Total RW  Size (RW Data + ZI Data)              1296 (   1.27kB)
-    Total ROM Size (Code + RO Data + RW Data)      19772 (  19.31kB)
+    Total ROM Size (Code + RO Data + RW Data)      19788 (  19.32kB)
 
 ==============================================================================
 
