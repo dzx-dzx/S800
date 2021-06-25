@@ -1050,21 +1050,128 @@ void SysTick_Handler(void)
 					}
 				}
 			}
-		}
-		else if (strncmp(msg, "MUSIC", strlen("MUSIC")) == 0)
-		{
-			if (strncmp(msg + strlen("MUSIC") + 1, "PLAY", strlen("PLAY")) == 0)
-			{
-				noteTime = 0;
-				mode.doPlayMusic = true;
-			}
-			else if (strncmp(msg + strlen("MUSIC") + 1, "STOP", strlen("STOP")) == 0)
+			else if (strncasecmp(msg + strlen("set") + 1, "calender", strlen("calender")) == 0)
 			{
 
-				mode.doPlayMusic = false;
-				noteTime = 0;
-				peripheralDeviceOutput.beepFrequency = 0;
+				char tmp[100];
+
+				char *firstSpacebar = strpbrk(msg + strlen("set calender "), " ");
+				char *secondSpacebar = strpbrk(firstSpacebar + 1, " ");
+
+				if (*firstSpacebar != ' ' || *secondSpacebar != ' ')
+				{
+					sprintf(tmp, "Error!");
+					UARTStringPut(tmp);
+				}
+				else
+				{
+					uint64_t year = readNumberFromString(msg + strlen("set calender "), ' '),
+							 month = readNumberFromString(firstSpacebar + 1, ' ') - 1,
+							 day = readNumberFromString(secondSpacebar + 1, '\0') - 1;
+					if (year < 1970 || month >= 12 || day >= (isLeapYear(year) ? daysInMonthInLeapYear[month] : daysInMonth[month]))
+					{
+						sprintf(tmp, "Error!");
+						UARTStringPut(tmp);
+					}
+					else
+					{
+						sprintf(tmp, "Updating current calender to:%llu-%llu-%llu", year, month + 1, day + 1);
+						UARTStringPut(tmp);
+						time.year = year;
+						time.month = month;
+						time.day = day;
+						timestampInUTC = getTimestampFromTime(&time, 8);
+					}
+				}
 			}
+			else if (strncasecmp(msg + strlen("set") + 1, "countdown", strlen("countdown")) == 0)
+			{
+
+				char tmp[100];
+
+				char *firstColon = strpbrk(msg + strlen("set countdown "), ":");
+				char *secondColon = strpbrk(firstColon + 1, ":");
+
+				if (*firstColon != ':' || *secondColon != ':')
+				{
+					sprintf(tmp, "Error!");
+					UARTStringPut(tmp);
+				}
+				else
+				{
+					uint64_t hour = readNumberFromString(msg + strlen("set countdown "), ':'),
+							 minute = readNumberFromString(firstColon + 1, ':'),
+							 second = readNumberFromString(secondColon + 1, '\0');
+					if (hour >= 24 || minute >= 60 || second >= 60)
+					{
+						sprintf(tmp, "Error!");
+						UARTStringPut(tmp);
+					}
+					else
+					{
+						sprintf(tmp, "Updating current countdown to:%llu:%llu:%llu", hour, minute, second);
+						UARTStringPut(tmp);
+						countdownTime.hour = hour;
+						countdownTime.minute = minute;
+						countdownTime.second = second;
+						countdownTimestamp = getTimestampFromTime(&time, 8);
+					}
+				}
+			}
+			else if (strncasecmp(msg + strlen("set") + 1, "alarm", strlen("alarm")) == 0)
+			{
+
+				char tmp[100];
+
+				char *firstSpacebar = strpbrk(msg + strlen("set alarm"), " ");
+				char *secondSpacebar = strpbrk(firstSpacebar + 1, " ");
+				char *firstColon = strpbrk(secondSpacebar + 1, ":");
+				char *secondColon = strpbrk(firstColon + 1, ":");
+
+				if (*firstSpacebar != ' ' || *firstColon != ':' || *secondColon != ':')
+				{
+					sprintf(tmp, "Error!");
+					UARTStringPut(tmp);
+				}
+				else
+				{
+					uint64_t alarmOrdinalNumberFromMessage = readNumberFromString(firstSpacebar + 1, ' '),
+							 hour = readNumberFromString(secondSpacebar + 1, ':'),
+							 minute = readNumberFromString(firstColon + 1, ':'),
+							 second = readNumberFromString(secondColon + 1, '\0');
+					if (hour >= 24 || minute >= 60 || second >= 60 || alarmOrdinalNumberFromMessage > NUMBER_OF_ALARMS-1)
+					{
+						sprintf(tmp, "Error!");
+						UARTStringPut(tmp);
+					}
+					else
+					{
+						sprintf(tmp, "Updating alarm %llu to:%llu:%llu:%llu", alarmOrdinalNumberFromMessage, hour, minute, second);
+						UARTStringPut(tmp);
+						alarmTime[alarmOrdinalNumber].hour = hour;
+						alarmTime[alarmOrdinalNumber].minute = minute;
+						alarmTime[alarmOrdinalNumber].second = second;
+						alarmTimestamp[alarmOrdinalNumber] = getTimestampFromTime(&time, 8);
+					}
+				}
+			}
+			else
+				UARTStringPut("Error!");
+		}
+	}
+	else if (strncmp(msg, "MUSIC", strlen("MUSIC")) == 0)
+	{
+		if (strncmp(msg + strlen("MUSIC") + 1, "PLAY", strlen("PLAY")) == 0)
+		{
+			noteTime = 0;
+			mode.doPlayMusic = true;
+		}
+		else if (strncmp(msg + strlen("MUSIC") + 1, "STOP", strlen("STOP")) == 0)
+		{
+
+			mode.doPlayMusic = false;
+			noteTime = 0;
+			peripheralDeviceOutput.beepFrequency = 0;
 		}
 	}
 }

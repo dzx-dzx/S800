@@ -10,6 +10,7 @@
         "xstring": "c",
         "xutility": "c",
         "cstring": "c",
-        "cstdio": "cpp"
+        "cstdio": "cpp",
+        "utility": "c"
     }
 }
