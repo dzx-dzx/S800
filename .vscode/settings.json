@@ -9,6 +9,7 @@
         "type_traits": "c",
         "xstring": "c",
         "xutility": "c",
-        "cstring": "c"
+        "cstring": "c",
+        "cstdio": "cpp"
     }
 }

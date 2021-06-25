@@ -94,6 +94,8 @@ struct PeripheralDeviceInput
 	char UARTMessage[100];
 	char *UARTMessageTail;
 	uint16_t UARTMessageReceiveFinishedCountdown;
+	int8_t QEIDirection;
+	uint8_t QEIPosition;
 } peripheralDeviceInput;
 
 struct PeripheralDeviceOutput
@@ -129,8 +131,10 @@ uint8_t motor_control_phase = 0;
 bool isLeapYear(uint16_t year);
 void getTimeFromTimestamp(struct Time *time, uint64_t timestamp, uint32_t timeZone);
 void updateSolarTermsTimestamp(uint64_t solarTermsTimestamp[], uint16_t year);
+uint64_t getTimestampFromTime(struct Time *time, uint32_t timeZone);
 void addTenMilliseconds(struct Time *time);
 void minusTenMilliseconds(struct Time *time);
+uint64_t readNumberFromString(char *string, char delimiter);
 
 char convertNumberToChar(uint8_t number);
 uint8_t getSegmentDisplayControlWord(char character);
@@ -150,6 +154,7 @@ int main(void)
 	peripheralDeviceInput.keyPadStateByte = tempKeyboardStateByte;
 	peripheralDeviceInput.UARTMessageReceiveFinishedCountdown = 1926;
 	peripheralDeviceInput.UARTMessageTail = peripheralDeviceInput.UARTMessage;
+	peripheralDeviceInput.QEIDirection = 1;
 	peripheralDeviceOutput.beepFrequency = 0;
 	peripheralDeviceOutput.lightLevel = NUMBERS_OF_LIGHT_LEVELS - 1;
 	peripheralDeviceOutput.motorClockwise = true;
@@ -172,6 +177,9 @@ int main(void)
 	{
 
 		I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~peripheralDeviceOutput.LEDDisplayByte);
+
+		peripheralDeviceInput.QEIDirection = QEIDirectionGet(QEI0_BASE);
+		peripheralDeviceInput.QEIPosition = QEIPositionGet(QEI0_BASE);
 		for (i = 0; i < 8; i++)
 		{
 			//在读写操作同时存在的情况下,似乎有时读得数据会变为0x0.取代直接读取按钮状态的代码,下列代码防止错误数据的传入.
@@ -378,6 +386,9 @@ void SysTick_Handler(void)
 
 	static uint16_t noteTime = 0, noteIndex = 0;
 
+	static int8_t previousQEIDirection, previousQEIPosition;
+	uint8_t QEIRotatedClockwise = false, QEIRotatedCounterclockwise = false;
+
 	struct Mode
 	{
 		uint8_t master;
@@ -423,7 +434,7 @@ void SysTick_Handler(void)
 	}
 
 	//Keypad及按钮状态.
-	if (counter % (SYSTICK_FREQUENCY * 10 / 1000) == 0) //20ms
+	if (counter % (SYSTICK_FREQUENCY * 20 / 1000) == 0) //20ms
 	{
 		for (i = 0; i < 8; i++)
 		{
@@ -440,6 +451,30 @@ void SysTick_Handler(void)
 			buttonHoldCount[i] = (currentButtonState[i] && previousButtonState[i]) ? buttonHoldCount[i] + 1 : 0;
 			buttonHold[i] = buttonHoldCount[i] > 0 && (buttonHoldCount[i] % 50 == 0);
 			previousButtonState[i] = currentButtonState[i];
+		}
+	}
+
+	if (counter % (SYSTICK_FREQUENCY * 100 / 1000) == 0)
+	{
+		if ((previousQEIPosition > peripheralDeviceInput.QEIPosition) ? previousQEIPosition - peripheralDeviceInput.QEIPosition >= 2 : peripheralDeviceInput.QEIPosition - previousQEIPosition >= 2)
+		{
+			previousQEIPosition = peripheralDeviceInput.QEIPosition;
+			previousQEIDirection = peripheralDeviceInput.QEIDirection;
+			if (peripheralDeviceInput.QEIDirection == 1)
+			{
+				QEIRotatedClockwise = true;
+				QEIRotatedCounterclockwise = false;
+			}
+			else if (peripheralDeviceInput.QEIDirection == -1)
+			{
+				QEIRotatedClockwise = false;
+				QEIRotatedCounterclockwise = true;
+			}
+		}
+		else
+		{
+			QEIRotatedClockwise = false;
+			QEIRotatedCounterclockwise = false;
 		}
 	}
 
@@ -559,7 +594,7 @@ void SysTick_Handler(void)
 					timeSelectedDigit = (timeSelectedDigit + 5) % 6;
 				if (keypadPressed[2])
 					timeSelectedDigit = (timeSelectedDigit + 1) % 6;
-				if (keypadPressed[6])
+				if (keypadPressed[6] || QEIRotatedClockwise)
 				{
 					switch (timeSelectedDigit)
 					{
@@ -586,7 +621,7 @@ void SysTick_Handler(void)
 					}
 					getTimeFromTimestamp(&time, timestampInUTC, 8);
 				}
-				if (keypadPressed[1])
+				if (keypadPressed[1] || QEIRotatedCounterclockwise)
 				{
 					switch (timeSelectedDigit)
 					{
@@ -649,7 +684,7 @@ void SysTick_Handler(void)
 					{
 						calenderSelectedDigit = (calenderSelectedDigit + 1) % 8;
 					} while (!(calenderSelectedDigit == 3 || calenderSelectedDigit == 5 || calenderSelectedDigit == 6 || calenderSelectedDigit == 7));
-				if (keypadPressed[6])
+				if (keypadPressed[6] || QEIRotatedClockwise)
 				{
 					switch (calenderSelectedDigit)
 					{
@@ -678,7 +713,7 @@ void SysTick_Handler(void)
 					}
 					getTimeFromTimestamp(&time, timestampInUTC, 8);
 				}
-				if (keypadPressed[1])
+				if (keypadPressed[1] || QEIRotatedCounterclockwise)
 				{
 					switch (calenderSelectedDigit)
 					{
@@ -762,7 +797,7 @@ void SysTick_Handler(void)
 				if (keypadPressed[2])
 					countdownSelectedDigit = (countdownSelectedDigit + 1) % 6;
 
-				if (keypadPressed[6])
+				if (keypadPressed[6] || QEIRotatedClockwise)
 				{
 					switch (countdownSelectedDigit)
 					{
@@ -790,7 +825,7 @@ void SysTick_Handler(void)
 					countdownTimestamp %= 86400 * 100;
 					getTimeFromTimestamp(&countdownTime, countdownTimestamp, 0);
 				}
-				if (keypadPressed[1])
+				if (keypadPressed[1] || QEIRotatedCounterclockwise)
 				{
 					countdownTimestamp += 86400 * 100;
 					switch (countdownSelectedDigit)
@@ -855,7 +890,7 @@ void SysTick_Handler(void)
 				if (keypadPressed[2])
 					alarmSelectedDigit = (alarmSelectedDigit - 2 + 1) % 6 + 2;
 
-				if (keypadPressed[6])
+				if (keypadPressed[6] || QEIRotatedClockwise)
 				{
 					switch (alarmSelectedDigit)
 					{
@@ -883,7 +918,7 @@ void SysTick_Handler(void)
 					alarmTimestamp[alarmOrdinalNumber] %= 86400 * 100;
 					getTimeFromTimestamp(&alarmTime[alarmOrdinalNumber], alarmTimestamp[alarmOrdinalNumber], 0);
 				}
-				if (keypadPressed[1])
+				if (keypadPressed[1] || QEIRotatedCounterclockwise)
 				{
 					alarmTimestamp[alarmOrdinalNumber] += 86400 * 100;
 					switch (alarmSelectedDigit)
@@ -944,7 +979,7 @@ void SysTick_Handler(void)
 		segmentDisplayCharacter[i] = ' ';
 	}
 
-	if (mode.alarm == ALARM_MODE_RINGING || mode.countdown == COUNTDOWN_MODE_TIMEOUT)
+	if (mode.alarm == ALARM_MODE_RINGING)
 		peripheralDeviceOutput.beepFrequency = 2000;
 	else if (mode.doPlayMusic)
 	{
@@ -963,7 +998,8 @@ void SysTick_Handler(void)
 		}
 		peripheralDeviceOutput.beepFrequency = noteFrequency[notes[noteIndex][0]];
 	}
-	else peripheralDeviceOutput.beepFrequency = 0;
+	else
+		peripheralDeviceOutput.beepFrequency = 0;
 
 	if (UARTMessageReceived)
 	{
@@ -971,12 +1007,7 @@ void SysTick_Handler(void)
 		{
 			if (strncasecmp(msg + strlen("set") + 1, "timestamp", strlen("timestamp")) == 0)
 			{
-				uint16_t positionInMessage = strlen("set timestamp ");
-				uint64_t timestampFromMessage = 0;
-				while (msg[positionInMessage] != '\0')
-				{
-					timestampFromMessage = timestampFromMessage * (uint64_t)10 + (uint64_t)(msg[positionInMessage++] - '0');
-				}
+				uint64_t timestampFromMessage = readNumberFromString(msg + strlen("set timestamp "), '\0');
 
 				char tmp[100];
 				sprintf(tmp, "Updating current timestamp to:%llu(times ten milliseconds)", timestampFromMessage);
@@ -984,6 +1015,40 @@ void SysTick_Handler(void)
 
 				timestampInUTC = timestampFromMessage;
 				getTimeFromTimestamp(&time, timestampInUTC, 8);
+			}
+			else if (strncasecmp(msg + strlen("set") + 1, "clock", strlen("clock")) == 0)
+			{
+
+				char tmp[100];
+
+				char *firstColon = strpbrk(msg + strlen("set clock "), ":");
+				char *secondColon = strpbrk(firstColon + 1, ":");
+
+				if (*firstColon != ':' || *secondColon != ':')
+				{
+					sprintf(tmp, "Error!");
+					UARTStringPut(tmp);
+				}
+				else
+				{
+					uint64_t hour = readNumberFromString(msg + strlen("set clock "), ':'),
+							 minute = readNumberFromString(firstColon + 1, ':'),
+							 second = readNumberFromString(secondColon + 1, '\0');
+					if (hour >= 24 || minute >= 60 || second >= 60)
+					{
+						sprintf(tmp, "Error!");
+						UARTStringPut(tmp);
+					}
+					else
+					{
+						sprintf(tmp, "Updating current clock to:%llu:%llu:%llu", hour, minute, second);
+						UARTStringPut(tmp);
+						time.hour = hour;
+						time.minute = minute;
+						time.second = second;
+						timestampInUTC = getTimestampFromTime(&time, 8);
+					}
+				}
 			}
 		}
 		else if (strncmp(msg, "MUSIC", strlen("MUSIC")) == 0)
@@ -995,7 +1060,7 @@ void SysTick_Handler(void)
 			}
 			else if (strncmp(msg + strlen("MUSIC") + 1, "STOP", strlen("STOP")) == 0)
 			{
-				
+
 				mode.doPlayMusic = false;
 				noteTime = 0;
 				peripheralDeviceOutput.beepFrequency = 0;
@@ -1238,4 +1303,31 @@ void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_
 			if (blinkDigitByte & 1 << i)
 				segmentDisplayCharacter[i] = ' ';
 	}
+}
+uint64_t getTimestampFromTime(struct Time *time, uint32_t timeZone)
+{
+	uint64_t timestamp = (uint64_t)time->hour * 3600 * 100 + (uint64_t)time->minute * 60 * 100 + (uint64_t)time->second * 100 + (uint64_t)time->tenMillisecond + (uint64_t)time->day * 86400 * 100 - (uint64_t)timeZone * 3600 * 100;
+	uint16_t month = 0, year = 1970;
+	while (year < time->year)
+
+	{
+		timestamp += isLeapYear(year) ? (uint64_t)daysInLeapYear * 86400 * 100 : (uint64_t)daysInYear * 86400 * 100;
+		year++;
+	}
+	while (month < time->month)
+	{
+		timestamp += isLeapYear(time->year) ? (uint64_t)daysInMonth[month] * 86400 * 100 : (uint64_t)daysInMonthInLeapYear[month] * 86400 * 100;
+		month++;
+	}
+	return timestamp;
+}
+uint64_t readNumberFromString(char *string, char delimiter)
+{
+	uint16_t positionInMessage = 0;
+	uint64_t number = 0;
+	while (string[positionInMessage] != '\0' && string[positionInMessage] != delimiter)
+	{
+		number = number * (uint64_t)10 + (uint64_t)(string[positionInMessage++] - '0');
+	}
+	return number;
 }
