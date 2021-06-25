@@ -384,7 +384,7 @@ void SysTick_Handler(void)
 
 	static uint16_t bootCountdown;
 
-	static uint16_t noteTime = 0, noteIndex = 0;
+	static uint32_t noteTime = 0, noteIndex = 0;
 
 	static int8_t previousQEIDirection, previousQEIPosition;
 	uint8_t QEIRotatedClockwise = false, QEIRotatedCounterclockwise = false;
@@ -479,7 +479,7 @@ void SysTick_Handler(void)
 	}
 
 	//重启:
-	if (buttonHold[0] && buttonHold[1])
+	if (buttonHoldCount[0] > 50 && buttonHoldCount[1] > 50)
 	{
 		EEPROMProgram(&timestampInUTCLowBit, 0x400, sizeof(timestampInUTCLowBit));
 		EEPROMProgram(&timestampInUTCHighBit, 0x400 + sizeof(timestampInUTCLowBit), sizeof(timestampInUTCHighBit));
@@ -493,7 +493,6 @@ void SysTick_Handler(void)
 		addTenMilliseconds(&time);
 		if (time.tenMillisecond == 0)
 		{
-
 			peripheralDeviceOutput.motorClockwise = true;
 			peripheralDeviceOutput.motorCycle = 10;
 		}
@@ -1041,12 +1040,13 @@ void SysTick_Handler(void)
 					}
 					else
 					{
-						sprintf(tmp, "Updating current clock to:%llu:%llu:%llu", hour, minute, second);
-						UARTStringPut(tmp);
+						
 						time.hour = hour;
 						time.minute = minute;
 						time.second = second;
 						timestampInUTC = getTimestampFromTime(&time, 8);
+						sprintf(tmp, "Updating current clock to:%llu:%llu:%llu", hour, minute, second);
+						UARTStringPut(tmp);
 					}
 				}
 			}
@@ -1158,21 +1158,29 @@ void SysTick_Handler(void)
 			else
 				UARTStringPut("Error!");
 		}
-	}
-	else if (strncmp(msg, "MUSIC", strlen("MUSIC")) == 0)
-	{
-		if (strncmp(msg + strlen("MUSIC") + 1, "PLAY", strlen("PLAY")) == 0)
+		else if (strncmp(msg, "MUSIC", strlen("MUSIC")) == 0)
 		{
-			noteTime = 0;
-			mode.doPlayMusic = true;
-		}
-		else if (strncmp(msg + strlen("MUSIC") + 1, "STOP", strlen("STOP")) == 0)
-		{
+			if (strncmp(msg + strlen("MUSIC") + 1, "PLAY", strlen("PLAY")) == 0)
+			{
+				noteTime = 0;
+				noteIndex = 0;
+				mode.doPlayMusic = true;
+				char tmp[100];
+				sprintf(tmp, "BAD APPLE!!");
+				UARTStringPut(tmp);
+			}
+			else if (strncmp(msg + strlen("MUSIC") + 1, "STOP", strlen("STOP")) == 0)
+			{
 
-			mode.doPlayMusic = false;
-			noteTime = 0;
-			peripheralDeviceOutput.beepFrequency = 0;
+				mode.doPlayMusic = false;
+				noteTime = 0;
+				peripheralDeviceOutput.beepFrequency = 0;
+			}
+			else
+				UARTStringPut("Error!");
 		}
+		else
+			UARTStringPut("Error!");
 	}
 }
 void UART0_Handler(void)
