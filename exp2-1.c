@@ -963,6 +963,7 @@ void SysTick_Handler(void)
 		}
 		peripheralDeviceOutput.beepFrequency = noteFrequency[notes[noteIndex][0]];
 	}
+	else peripheralDeviceOutput.beepFrequency = 0;
 
 	if (UARTMessageReceived)
 	{
