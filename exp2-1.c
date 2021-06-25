@@ -1139,7 +1139,7 @@ void SysTick_Handler(void)
 							 hour = readNumberFromString(secondSpacebar + 1, ':'),
 							 minute = readNumberFromString(firstColon + 1, ':'),
 							 second = readNumberFromString(secondColon + 1, '\0');
-					if (hour >= 24 || minute >= 60 || second >= 60 || alarmOrdinalNumberFromMessage > NUMBER_OF_ALARMS-1)
+					if (hour >= 24 || minute >= 60 || second >= 60 || alarmOrdinalNumberFromMessage > NUMBER_OF_ALARMS - 1)
 					{
 						sprintf(tmp, "Error!");
 						UARTStringPut(tmp);
