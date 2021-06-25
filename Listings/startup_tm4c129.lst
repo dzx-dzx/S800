@@ -1307,11 +1307,11 @@ ARM Macro Assembler    Page 21
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
 erwork --depend=.\objects\startup_tm4c129.d -o.\objects\startup_tm4c129.o -Id:\
-S800\Project\RTE\_Target_1 -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0\CMSIS\Include 
--IC:\Keil_v5\ARM\PACK\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C129 --predefine="_
-_UVISION_VERSION SETA 522" --predefine="_RTE_ SETA 1" --predefine="TM4C1294NCPD
-T SETA 1" --list=.\listings\startup_tm4c129.lst RTE\Device\TM4C1294NCPDT\startu
-p_TM4C129.s
+S800\Project\RTE\_Target_1 -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Inc
+lude -IC:\Keil_v5\ARM\PACK\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C129 --predefi
+ne="__UVISION_VERSION SETA 522" --predefine="_RTE_ SETA 1" --predefine="TM4C129
+4NCPDT SETA 1" --list=.\listings\startup_tm4c129.lst RTE\Device\TM4C1294NCPDT\s
+tartup_TM4C129.s
 
 
 

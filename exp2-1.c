@@ -103,7 +103,7 @@ struct PeripheralDeviceOutput
 	uint32_t beepFrequency; //Set to 0 to turn off.
 	uint8_t lightLevel;
 	uint8_t motorClockwise;
-	uint8_t motorOn;
+	uint8_t motorCycle;
 } peripheralDeviceOutput;
 
 struct Time
@@ -138,7 +138,6 @@ uint8_t getSegmentDisplayControlWord(char character);
 
 void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_t blinkDigitByte);
 void LEDBlink(uint64_t counter, uint8_t blinkDigitByte);
-void beepPlay(uint32_t *beepFrequency, uint64_t counter, uint16_t *beepSequence);
 const uint16_t noteFrequency[] = {0, 35, 37, 39, 41, 44, 46, 49, 52, 55, 58, 62, 66, 70, 74, 78, 83, 88, 93, 98, 104, 110, 117, 124, 131, 139, 147, 156, 165, 175, 186, 197, 208, 221, 234, 248, 263, 278, 295, 312, 331, 351, 371, 393, 417, 442, 468, 496, 525, 556, 590, 625, 662, 701, 743, 787, 834, 883, 936, 992, 1051, 1113, 1179, 1249, 1324, 1402, 1486, 1574, 1668, 1767, 1872, 1983, 2101, 2226, 2358, 2499, 2647, 2804, 2971, 3148, 3335, 3533, 3744, 3966, 4202, 4452, 4717, 4997, 5294, 5609, 5943, 6296, 6670, 7067, 7487, 7932, 8404, 8904, 9433, 9994, 10588, 11218, 11885, 12592, 13341, 14134, 14974, 15865};
 
 int main(void)
@@ -146,8 +145,6 @@ int main(void)
 	uint8_t i = 0;
 
 	uint8_t tempKeyboardStateByte = 0xff;
-
-	uint8_t motorOnLock = false;
 
 	//use internal 16M oscillator, HSI
 	ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_16MHZ | SYSCTL_OSC_INT | SYSCTL_USE_OSC), 16000000);
@@ -157,7 +154,7 @@ int main(void)
 	peripheralDeviceOutput.beepFrequency = 0;
 	peripheralDeviceOutput.lightLevel = NUMBERS_OF_LIGHT_LEVELS - 1;
 	peripheralDeviceOutput.motorClockwise = true;
-	peripheralDeviceOutput.motorOn = false;
+	peripheralDeviceOutput.motorCycle = 0;
 
 	S800_GPIO_Init();
 	S800_I2C0_Init();
@@ -186,21 +183,12 @@ int main(void)
 
 			if (peripheralDeviceOutput.lightLevel > 0)
 				flash_seg(i, peripheralDeviceOutput.segmentDisplayControlWord[i]);
+			if (peripheralDeviceOutput.motorCycle > 0)
+				GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, motor_control[8 - i]);
 		}
-
+		if (peripheralDeviceOutput.motorCycle > 0)
+			peripheralDeviceOutput.motorCycle--;
 		PWMOutputState(PWM0_BASE, (PWM_OUT_7_BIT), peripheralDeviceOutput.beepFrequency != 0);
-
-		if (peripheralDeviceOutput.motorOn)
-		{
-			for (i = 0; i < 8; i++)
-			{
-				for (motor_control_phase = 0; motor_control_phase < 8; motor_control_phase++)
-				{
-					GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, motor_control[motor_control_phase]);
-					Delay(4000);
-				}
-			}
-		}
 
 		if (peripheralDeviceOutput.beepFrequency != 0)
 		{
@@ -216,10 +204,10 @@ void flash_seg(uint8_t display_index, uint8_t control_word)
 {
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT1, control_word);
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(1 << display_index));
-	Delay((uint32_t)4000 * peripheralDeviceOutput.lightLevel);
+	Delay((uint32_t)800 * peripheralDeviceOutput.lightLevel);
 	// I2C0_WriteByte(PCA9557_I2CADDR, PCA9557_OUTPUT, ~((uint8_t)(1 << display_index)));
 	I2C0_WriteByte(TCA6424_I2CADDR, TCA6424_OUTPUT_PORT2, (uint8_t)(0));
-	Delay((uint32_t)4000 * (NUMBERS_OF_LIGHT_LEVELS - 1 - peripheralDeviceOutput.lightLevel));
+	Delay((uint32_t)800 * (NUMBERS_OF_LIGHT_LEVELS - 1 - peripheralDeviceOutput.lightLevel));
 }
 
 void S800_GPIO_Init(void)
@@ -469,11 +457,10 @@ void SysTick_Handler(void)
 		addTenMilliseconds(&time);
 		if (time.tenMillisecond == 0)
 		{
-			peripheralDeviceOutput.motorOn = true;
+
 			peripheralDeviceOutput.motorClockwise = true;
+			peripheralDeviceOutput.motorCycle = 10;
 		}
-		else
-			peripheralDeviceOutput.motorOn = false;
 	}
 	// getTimeFromTimestamp(&time, timestampInUTC, 8);
 
@@ -773,7 +760,7 @@ void SysTick_Handler(void)
 					countdownSelectedDigit = (countdownSelectedDigit + 5) % 6;
 				if (keypadPressed[2])
 					countdownSelectedDigit = (countdownSelectedDigit + 1) % 6;
-				countdownTimestamp += 86400 * 100;
+
 				if (keypadPressed[6])
 				{
 					switch (countdownSelectedDigit)
@@ -804,6 +791,7 @@ void SysTick_Handler(void)
 				}
 				if (keypadPressed[1])
 				{
+					countdownTimestamp += 86400 * 100;
 					switch (countdownSelectedDigit)
 					{
 					case 0:
@@ -865,7 +853,7 @@ void SysTick_Handler(void)
 					alarmSelectedDigit = (alarmSelectedDigit - 2 + 5) % 6 + 2;
 				if (keypadPressed[2])
 					alarmSelectedDigit = (alarmSelectedDigit - 2 + 1) % 6 + 2;
-				alarmTimestamp[alarmOrdinalNumber] += 86400 * 100;
+
 				if (keypadPressed[6])
 				{
 					switch (alarmSelectedDigit)
@@ -896,7 +884,7 @@ void SysTick_Handler(void)
 				}
 				if (keypadPressed[1])
 				{
-
+					alarmTimestamp[alarmOrdinalNumber] += 86400 * 100;
 					switch (alarmSelectedDigit)
 					{
 					case 2:
@@ -973,8 +961,9 @@ void SysTick_Handler(void)
 			noteIndex++;
 		}
 		peripheralDeviceOutput.beepFrequency = noteFrequency[notes[noteIndex][0]];
+		peripheralDeviceOutput.beepFrequency = 0;
 	}
-	peripheralDeviceOutput.beepFrequency = 0;
+	
 
 	if (UARTMessageReceived)
 	{
@@ -1170,6 +1159,8 @@ void minusTenMilliseconds(struct Time *time)
 					{
 						if (time->month == 0)
 						{
+							if (time->year == 0)
+								return;
 							time->year--;
 							time->month = 11;
 						}
@@ -1231,7 +1222,4 @@ void segmentDisplayBlink(char *segmentDisplayCharacter, uint64_t counter, uint8_
 			if (blinkDigitByte & 1 << i)
 				segmentDisplayCharacter[i] = ' ';
 	}
-}
-void beepPlay(uint32_t *beepFrequency, uint64_t counter, uint16_t *beepSequence)
-{
 }

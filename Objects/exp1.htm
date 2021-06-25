@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\exp1.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\exp1.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Thu Jun 24 21:10:25 2021
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Fri Jun 25 16:26:32 2021
 <BR><P>
 <H3>Maximum Stack Usage =        320 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1500,8 +1500,7 @@ Global Symbols
 <P><STRONG><a name="[12b]"></a>__use_no_semihosting_swi</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, use_no_semi.o(.text), UNUSED)
 
 <P><STRONG><a name="[c2]"></a>Delay</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, exp2-1.o(i.Delay))
-<BR><BR>[Called By]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
-<LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_seg
+<BR><BR>[Called By]<UL><LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_seg
 <LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C0_ReadByte
 </UL>
 
@@ -1875,7 +1874,7 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;S800_Int_Init
 </UL>
 
-<P><STRONG><a name="[c]"></a>SysTick_Handler</STRONG> (Thumb, 5668 bytes, Stack size 200 bytes, exp2-1.o(i.SysTick_Handler))
+<P><STRONG><a name="[c]"></a>SysTick_Handler</STRONG> (Thumb, 5676 bytes, Stack size 200 bytes, exp2-1.o(i.SysTick_Handler))
 <BR><BR>[Stack]<UL><LI>Max Depth = 320 + Unknown Stack Size
 <LI>Call Chain = SysTick_Handler &rArr; __2sprintf &rArr; _printf_char_common &rArr; __printf
 </UL>
@@ -1999,7 +1998,7 @@ Global Symbols
 <LI><a href="#[c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SysTick_Handler
 </UL>
 
-<P><STRONG><a name="[90]"></a>main</STRONG> (Thumb, 326 bytes, Stack size 0 bytes, exp2-1.o(i.main))
+<P><STRONG><a name="[90]"></a>main</STRONG> (Thumb, 298 bytes, Stack size 0 bytes, exp2-1.o(i.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 44<LI>Call Chain = main &rArr; S800_UART_Init &rArr; GPIOPinTypeUART &rArr; GPIOPadConfigSet
 </UL>
 <BR>[Calls]<UL><LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SysCtlPeripheralReady
@@ -2020,12 +2019,11 @@ Global Symbols
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;S800_GPIO_Init
 <LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C0_WriteByte
 <LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C0_ReadByte
-<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Delay
 </UL>
 <BR>[Called By]<UL><LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__rt_entry_main
 </UL>
 
-<P><STRONG><a name="[e4]"></a>minusTenMilliseconds</STRONG> (Thumb, 138 bytes, Stack size 8 bytes, exp2-1.o(i.minusTenMilliseconds))
+<P><STRONG><a name="[e4]"></a>minusTenMilliseconds</STRONG> (Thumb, 146 bytes, Stack size 8 bytes, exp2-1.o(i.minusTenMilliseconds))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = minusTenMilliseconds
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;isLeapYear
