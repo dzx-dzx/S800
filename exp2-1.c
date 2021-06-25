@@ -1114,7 +1114,7 @@ void SysTick_Handler(void)
 						countdownTime.hour = hour;
 						countdownTime.minute = minute;
 						countdownTime.second = second;
-						countdownTimestamp = getTimestampFromTime(&time, 8);
+						countdownTimestamp = getTimestampFromTime(&countdownTime, 0);
 					}
 				}
 			}
@@ -1148,10 +1148,10 @@ void SysTick_Handler(void)
 					{
 						sprintf(tmp, "Updating alarm %llu to:%llu:%llu:%llu", alarmOrdinalNumberFromMessage, hour, minute, second);
 						UARTStringPut(tmp);
-						alarmTime[alarmOrdinalNumber].hour = hour;
-						alarmTime[alarmOrdinalNumber].minute = minute;
-						alarmTime[alarmOrdinalNumber].second = second;
-						alarmTimestamp[alarmOrdinalNumber] = getTimestampFromTime(&time, 8);
+						alarmTime[alarmOrdinalNumberFromMessage].hour = hour;
+						alarmTime[alarmOrdinalNumberFromMessage].minute = minute;
+						alarmTime[alarmOrdinalNumberFromMessage].second = second;
+						alarmTimestamp[alarmOrdinalNumberFromMessage] = getTimestampFromTime(&alarmTime[alarmOrdinalNumberFromMessage], 0);
 					}
 				}
 			}
