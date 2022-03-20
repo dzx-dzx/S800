@@ -3,12 +3,9 @@
         {
             "name": "Target 1",
             "includePath": [
-                "d:\\S800\\Project\\inc",
-                "d:\\S800\\Project\\driverlib",
-                "C:\\Keil_v5\\ARM\\ARMCC\\include",
-                "C:\\Keil_v5\\ARM\\ARMCC\\include\\rw",
-                "d:\\S800\\Project",
-                "d:\\S800\\Project\\driverlib\\rvmdk"
+                "/home/henry/S800/.\\inc",
+                "/home/henry/S800/.\\driverlib",
+                "/home/henry/S800"
             ],
             "defines": [
                 "PART_TM4C1294NCPDT",
